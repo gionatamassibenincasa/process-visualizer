@@ -1,0 +1,82 @@
+= API Contracts
+:toc:
+
+== Scopo
+
+Definire il contratto stabile tra core engine e consumer esterni (es. web app).
+
+== Parser API
+
+=== parseProgrammaDaSorgente(sorgente: string): ProgrammaAST
+
+Precondizioni:
+
+- sorgente non nullo
+
+Postcondizioni:
+
+- ritorna ProgrammaAST con forme in ordine
+- in caso di sintassi non valida lancia errore descrittivo
+
+Errori principali:
+
+- parentesi mancanti
+- token inattesi
+- clausole semantiche minime violate (es. corpo lambda vuoto)
+
+== Stepper API
+
+=== passo(nodo: NodoAST, env?): PassoStepping
+
+Campi output:
+
+- astPrecedente: stato prima della riduzione
+- astSuccessivo: stato dopo la riduzione
+- regolaApplicata: spiegazione sintetica
+- eTerminato: true se non ci sono ulteriori riduzioni
+
+=== passiDaSorgente(sorgente: string, maxPassi = 200): PassoStepping[]
+
+Comportamento:
+
+- parse sorgente in ProgrammaAST
+- applica riduzioni iterative
+- termina quando eTerminato = true
+- lancia errore se supera maxPassi
+
+== Formatter API
+
+=== stampa(nodo: NodoAST): string
+
+Ritorna rappresentazione canonica simbolica del nodo.
+
+=== formattaPassoStepping(passo, indice): SnapshotPassoStepping
+
+Ritorna DTO con:
+
+- indice
+- regola
+- precedente
+- successivo
+- terminato
+- haRidotto
+- focusProgramma (opzionale)
+
+=== formattaTimelineStepping(passi): SnapshotPassoStepping[]
+
+Converte una sequenza di passi in timeline pronta per UI.
+
+=== formattaTimelineTestuale(passi): string
+
+Converte timeline in log lineare per debug.
+
+== Stabilita contrattuale
+
+I seguenti campi sono considerati stabili per integrazione frontend:
+
+- SnapshotPassoStepping.indice
+- SnapshotPassoStepping.regola
+- SnapshotPassoStepping.precedente
+- SnapshotPassoStepping.successivo
+- SnapshotPassoStepping.terminato
+- SnapshotPassoStepping.haRidotto

@@ -1,0 +1,28 @@
+= ADR-0001: Strategia documentazione ibrida
+:status: accepted
+:date: 2026-08-04
+
+== Contesto
+
+Serve documentazione costruita anche retrospettivamente, utile sia per sviluppatori umani sia per LLM, e adatta all'integrazione API in web app.
+
+== Decisione
+
+Adottare strategia ibrida:
+
+- JSDoc vicino ai sorgenti per contratti locali
+- Asciidoc per architettura, semantica, integrazione e runbook
+- test come esempi eseguibili (golden traces)
+
+== Conseguenze
+
+Positive:
+
+- riduzione drift tra codice e documentazione
+- migliore onboarding e manutenzione
+- maggiore affidabilita per assistenti LLM
+
+Tradeoff:
+
+- costo di mantenimento su due livelli (codice + docs)
+- necessita di checklist periodica di riallineamento

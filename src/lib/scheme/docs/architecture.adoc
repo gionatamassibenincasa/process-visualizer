@@ -1,0 +1,67 @@
+= Architecture
+:toc:
+
+== Obiettivo
+
+Visualizzare l'evoluzione di un programma Scheme come sequenza di trasformazioni AST fino al termine.
+
+== Pipeline principale
+
+[source,text]
+----
+Source Code
+  -> Lexer (tokens)
+  -> Parser (ProgrammaAST)
+  -> Stepper (PassoStepping[])
+  -> Formatter (SnapshotPassoStepping[])
+  -> Web UI Timeline
+----
+
+== Componenti
+
+=== Lexer
+
+Responsabilita:
+
+- tokenizzazione del sorgente
+- normalizzazione booleana base
+- gestione quote, parentesi, punto
+
+Output: sequenza di token con FineDelFile.
+
+=== Parser
+
+Responsabilita:
+
+- parsing top-level in ProgrammaAST
+- gestione forme speciali (define, lambda, if, and, or, cond)
+- parsing datum citati (lista, coppia puntata)
+
+Output: AST tipizzato e navigabile con visitor.
+
+=== Stepper
+
+Responsabilita:
+
+- riduzione small-step di un nodo
+- riduzione sequenziale di ProgrammaAST
+- mantenimento ambiente di valutazione
+
+Output: PassoStepping con stato precedente/successivo, regola, terminazione.
+
+=== Formatter
+
+Responsabilita:
+
+- serializzazione canonica AST
+- produzione timeline snapshot per UI
+- serializzazione lineare per log/debug
+
+Output: stringhe simboliche e DTO di tracing.
+
+== Principi architetturali
+
+- Determinismo: stessa input source produce stessa timeline.
+- Tracciabilita: ogni passo ha regola esplicita.
+- Isolamento: parser, stepper e formatter testabili separatamente.
+- Componibilita: formatter consuma solo oggetti stepper, non dettagli UI.

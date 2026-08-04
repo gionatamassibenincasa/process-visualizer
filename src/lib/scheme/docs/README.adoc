@@ -1,0 +1,61 @@
+= Process Visualizer Scheme Docs
+:toc: left
+:toclevels: 3
+:sectnums:
+
+Questa cartella contiene la documentazione tecnica del motore Scheme orientata a:
+
+- comprensione umana (architettura, semantica, integrazione)
+- consumo da LLM (contratti espliciti, output deterministici, esempi canonici)
+- integrazione API verso web app (timeline di riduzione AST)
+
+== Mappa documenti
+
+- xref:architecture.adoc[Architecture]
+- xref:language-semantics.adoc[Language Semantics]
+- xref:api-contracts.adoc[API Contracts]
+- xref:web-integration.adoc[Web Integration]
+- xref:error-model.adoc[Error Model]
+- xref:checklist-retrodoc.adoc[Retro-Documentation Checklist]
+- xref:adr/0001-docs-strategy.adoc[ADR-0001 Docs Strategy]
+
+== Ambito corrente
+
+Motore in analisi:
+
+- AST: costruzione nodi e visitor
+- Lexer: tokenizzazione sorgente Scheme
+- Parser: sorgente -> ProgrammaAST
+- Stepper: riduzione small-step
+- Formatter: rendering simbolico e timeline snapshot
+
+== Convenzioni
+
+- Ogni API pubblica deve avere JSDoc con precondizioni, postcondizioni, errori.
+- Ogni esempio in docs deve essere eseguibile o verificabile via test.
+- Ogni modifica semantica richiede aggiornamento della matrice di tracciabilita.
+
+== Build documentazione
+
+Da questa cartella:
+
+[source,bash]
+----
+./build-docs.sh html
+----
+
+Output generato in `docs/dist/html`.
+
+Per PDF:
+
+[source,bash]
+----
+./build-docs.sh pdf
+----
+
+Per generare entrambi:
+
+[source,bash]
+----
+./build-docs.sh all
+----

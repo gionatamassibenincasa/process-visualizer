@@ -1,0 +1,41 @@
+= Language Semantics
+:toc:
+
+== Scopo
+
+Definire la semantica operativa del sottoinsieme Scheme supportato.
+
+== Forme valutabili
+
+- Atomo: auto-valutante se numero/boolean/stringa, altrimenti lookup simbolo.
+- Define: valuta il valore, inserisce binding, restituisce valore definito.
+- If: valuta condizione, seleziona then/else.
+- Cond: valuta clausole in ordine, prima vera vince.
+- Applicazione: valuta operatore/argomenti e applica primitiva.
+- Programma: valuta le forme top-level in ordine.
+
+== Regole di riduzione (alto livello)
+
+1. Programma
+- riduci la prima forma non finale
+- se tutte finali: programma terminato
+
+2. Define
+- se valore non ridotto: riduci valore
+- altrimenti: inserisci binding in ambiente
+
+3. Applicazione
+- riduci operatore se necessario
+- risolvi argomenti simbolici
+- riduci argomenti left-to-right
+- applica funzione se operatore e argomenti sono pronti
+
+== Tracciabilita grammatica
+
+La grammatica canonica e in [ast/grammar.md](../ast/grammar.md).
+Ogni estensione grammaticale deve riflettersi in:
+
+- nodo AST esplicito
+- regola parser dedicata
+- formato canonico formatter
+- regola stepper o TODO semantico

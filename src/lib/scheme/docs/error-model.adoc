@@ -1,0 +1,55 @@
+= Error Model
+:toc:
+
+== Scopo
+
+Uniformare errori parser/stepper in un modello coerente per logging e UI.
+
+== Categorie
+
+=== SYNTAX_ERROR
+
+Origine: parser.
+
+Esempi:
+
+- parentesi mancante
+- token inatteso
+- forma speciale incompleta
+
+=== SEMANTIC_ERROR
+
+Origine: stepper/runtime.
+
+Esempi:
+
+- simbolo non risolvibile
+- applicazione non valida
+- clausola cond non valida
+
+=== EXECUTION_LIMIT
+
+Origine: stepper.
+
+Esempio:
+
+- superato limite maxPassi
+
+== Payload standard suggerito
+
+[source,typescript]
+----
+interface EngineError {
+  code: 'SYNTAX_ERROR' | 'SEMANTIC_ERROR' | 'EXECUTION_LIMIT' | 'INTERNAL_ERROR';
+  message: string;
+  details?: string;
+  stepIndex?: number;
+}
+----
+
+== Mapping pratico
+
+- Error parser -> SYNTAX_ERROR
+- Error da maxPassi -> EXECUTION_LIMIT
+- Error di lookup/applicazione runtime -> SEMANTIC_ERROR
+- Error non classificati -> INTERNAL_ERROR

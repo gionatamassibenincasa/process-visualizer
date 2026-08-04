@@ -1,0 +1,51 @@
+= Retro-Documentation Checklist
+:toc:
+
+Checklist operativa per costruire e mantenere documentazione a ritroso senza perdere allineamento col codice.
+
+== A. Baseline repository
+
+- [ ] Identificare API pubbliche reali in parser, stepper, formatter
+- [ ] Elencare file legacy/deprecati e marcarli esplicitamente
+- [ ] Confermare grammatica canonica corrente
+
+== B. JSDoc nei sorgenti
+
+- [ ] Ogni classe pubblica con descrizione scopo
+- [ ] Ogni metodo pubblico con parametri, ritorno, errori
+- [ ] Invarianti semantiche annotate (es. ordine riduzione left-to-right)
+- [ ] Esempio breve per le API centrali
+
+== C. Contratti API
+
+- [ ] Contratto parser documentato (input/output/errori)
+- [ ] Contratto stepper documentato (PassoStepping e terminazione)
+- [ ] Contratto formatter documentato (SnapshotPassoStepping)
+- [ ] Campi stabili per frontend marcati esplicitamente
+
+== D. Tracciabilita grammatica -> implementazione
+
+- [ ] Ogni costrutto grammaticale mappato a nodo AST
+- [ ] Ogni costrutto mappato a regola parser
+- [ ] Ogni costrutto valutabile mappato a regola stepper o TODO
+- [ ] Ogni costrutto serializzabile mappato a formato canonico formatter
+
+== E. Integrazione web app
+
+- [ ] Definito stato minimo UI per timeline
+- [ ] Definiti payload esempio input/output
+- [ ] Definita navigazione passi (prev/next/jump)
+- [ ] Definito pannello errori con codici standard
+
+== F. Test come documentazione eseguibile
+
+- [ ] Casi base coperti (define, if, and/or, cond)
+- [ ] Casi datum coperti (quote lista/coppia)
+- [ ] Golden trace aggiornate dopo modifiche semantiche
+- [ ] I test di integrazione parser-stepper-formatter sono verdi
+
+== G. Governance
+
+- [ ] Ogni modifica semantica aggiorna grammar + docs + test
+- [ ] Ogni decisione architetturale nuova apre/aggiorna ADR
+- [ ] Revisione documentazione in ogni PR significativa

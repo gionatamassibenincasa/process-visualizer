@@ -1,0 +1,81 @@
+= Web Integration
+:toc:
+
+== Obiettivo
+
+Integrare parser-stepper-formatter in una UI che mostri la riduzione AST passo-passo.
+
+== Flusso consigliato
+
+1. Utente invia sorgente Scheme.
+2. Backend/worker invoca passiDaSorgente.
+3. Formatter converte i passi in snapshot timeline.
+4. UI renderizza stato corrente e regola applicata.
+5. Utente naviga avanti/indietro tra i passi.
+
+== CLI di tracing
+
+Per ottenere timeline da file programma:
+
+[source,bash]
+----
+./scripts/stepper-trace.sh ./esempi/programma.scm --max-passi 200
+----
+
+Per output JSON (consigliato per frontend):
+
+[source,bash]
+----
+./scripts/stepper-trace.sh ./esempi/programma.scm --max-passi 200 --json
+----
+
+== Stato minimo UI
+
+[source,typescript]
+----
+interface TimelineState {
+  sourceCode: string;
+  steps: SnapshotPassoStepping[];
+  currentStepIndex: number;
+  isTerminated: boolean;
+  error: null | {
+    code: string;
+    message: string;
+    details?: string;
+  };
+}
+----
+
+== Contratto payload suggerito
+
+[source,json]
+----
+{
+  "sourceCode": "(define x 10) (+ x 5)",
+  "steps": [
+    {
+      "indice": 0,
+      "regola": "Programma: forma 1/2 -> Definizione variabile: 'x' = 10",
+      "precedente": "(define x 10)\n(+ x 5)",
+      "successivo": "10\n(+ x 5)",
+      "terminato": false,
+      "haRidotto": true,
+      "focusProgramma": { "indiceForma": 1, "totaleForme": 2 }
+    }
+  ]
+}
+----
+
+== UX minima consigliata
+
+- Pannello sorgente input
+- Vista AST simbolica corrente
+- Regola applicata nel passo corrente
+- Timeline numerata cliccabile
+- Indicatore terminazione
+- Pannello errori parser/stepper
+
+== Test di integrazione da preservare
+
+- runtime/stepper-integrazione.test.ts
+- runtime/stepper-formatter.test.ts

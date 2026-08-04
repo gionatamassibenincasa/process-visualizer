@@ -1,68 +1,42 @@
-# Process visualizer
+# sv
 
-Una web app statica per la didattica dei linguaggi di programmazione. 
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-L'editor permette di descrivere il programma. Sia esso descritto con:
+## Creating a project
 
-- un linguaggio imperativo, da eseguire su una macchina RAM,
-- un linguaggio funzionale, che riscrive espressioni sul modello del Lambda Calcolo con l'introduzione di ambienti,
-- un linguaggio logico che procede per unificazione e risoluzione,
-- un linguaggio basato sul modello ad attori,
-- un linguaggio basato sul modello dataflow.
+If you're seeing this, you've probably already done this step. Congrats!
 
-La prima versione è dedicata ad un sottoinsieme ridotto del linguaggio Scheme e non ha supporto per l'Input/Output.
+```sh
+# create a new project
+npx sv create my-app
+```
 
-## Idea generale
+To recreate this project with the same configuration:
 
-La porzione visibile dello schermo è divisa in due parti, orizzontali o verticali, che possono essere ridimensionate fino a scomparsa.
+```sh
+# recreate this project
+bun x sv@0.16.4 create --template minimal --types ts --add prettier eslint mcp="ide:vscode+setup:remote" experimental="versions:kit+features:async,remoteFunctions,explicitEnvironmentVariables,handleRenderingErrors" --install bun process-visualizer
+```
 
-Il componente in alto, o a sinistra, è l'editor (CodeMirror 6), in basso o a destra, in base alla scelta dell'utente, c'è l'output oppure lo stepper che permette l'esecuzione del codice passo passo.
+## Developing
 
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
-## Componenti web
+```sh
+npm run dev
 
-### Editor
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
+```
 
-L'editor è realizzato con CodeMirror 6 e permette di evidenziare la sintassi del linguaggio.
-Per l'evidenziazione saranno generati, se necessario, lexer appositi usando le soluzioni standard di CodeMirror.
+## Building
 
-### Output
+To create a production version of your app:
 
-Mostra il valore restituito dal programma
+```sh
+npm run build
+```
 
-### Stepper
+You can preview the production build with `npm run preview`.
 
-Mostra l'albero sintattico e l'ambiente, o lo stato della macchina, ad ogni passo di interpretazione/valutazione.
-
-## Componenti del modello
-
-### Analizzatore lessicale
-
-Un analizzatore lessicale divide in il testo in token, se strettamente necessario
-
-### Analizzatore sintattico
-
-Produce un albero sintattico. Mantiene le informazioni di contesto del codice sorgente originario: riga, colonna...
-I nodi dell'AST (Abstract Syntax Tree) sono tipizzati in base al linguaggio.
-
-### Interprete
-
-L'interprete valuta l'albero sintattico salvando in un oggetto ogni passo della valutazione
-
-## Vincoli
-
-### Vincoli funzionali
-
-1. tutto deve girare interamente nel browser.
-
-### Vincoli non funzionali
-
-1. Linguaggio TypeScript in Svelte 5
-
-#### Vincoli sulla codifica Svelte
-
-- *Use Runes exclusively:* Never use `let count = 0` for reactivity or `export let prop` for props. Use `$state()` and `$props()` instead.
-- *Avoid event modifiers:* Do not use legacy syntax like `on:click|preventDefault`. Use standard attributes like `onclick={handler}` and handle event modifications inside the JavaScript function.
-- *Drop component events:* Stop using `createEventDispatcher`. Pass callback functions as standard props instead (e.g., `onload={handleLoad}`).
-- *Leverage snippets:* Replace `<slot />` and `let:item` layout structures with the `{#snippet}` syntax.
-- *Write standard TypeScript:* Avoid highly experimental compiler tricks. Stick to standard TypeScript 5.x/6.x features.
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
