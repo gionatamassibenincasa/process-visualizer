@@ -10,13 +10,14 @@
 		FormatterScheme,
 		type SnapshotPassoStepping
 	} from '#lib/scheme/ast/formatter';
-	import { creaAmbienteGlobale } from '#lib/scheme/runtime/ambienteStandard';
+	// import { creaAmbiente } from '#lib/scheme/runtime/registroAmbienti';
 	import { StepperScheme } from '#lib/scheme/runtime/stepper';
 
 	const esempiScheme: readonly EsempioScheme[] = catalogoEsempi;
 
 	// Codice Scheme iniziale
-	let code = $state(`(define add1 (lambda (n) (+ n 1)))\n(add1 (+ 10 20))`);
+	//let code = $state(`(define add1 (lambda (n) (+ n 1)))\n(add1 (+ 10 20))`);
+	let code = $state(`; ambiente: minimo-numeri-naturali\n  (definisci addizione\n  (lambda (n m)\n    (cond\n      ((zero? m) n)\n      (altrimenti (s (addizione n (p m)))))))\n\n(addizione 5 3)`);
 	let direction = $state<'horizontal' | 'vertical'>('horizontal');
 	let rightMode = $state<'output' | 'stepper'>('stepper');
 	let selectedExampleId = $state('');
@@ -41,15 +42,12 @@
 		finalResult = '';
 	}
 
-	function loadSelectedExample(id: string) {
-		selectedExampleId = id;
-		const example = esempiScheme.find((candidate) => candidate.id === id);
-
-		if (!example) {
+	function loadSelectedExample() {
+		if (!selectedExample) {
 			return;
 		}
 
-		code = example.sorgente;
+		code = selectedExample.sorgente;
 		resetExecutionState();
 	}
 
@@ -57,8 +55,9 @@
 		resetExecutionState();
 
 		try {
-			const environment = creaAmbienteGlobale();
-			const stepper = new StepperScheme(environment);
+			// const environment = creaAmbienteGlobale();
+			// const stepper = new StepperScheme(environment);
+			const stepper = StepperScheme.daSorgente(code);
 			const formatter = new FormatterScheme();
 			const steps = stepper.passiDaSorgente(code);
 			const timeline = formatter.formattaTimelineStepping(steps);
@@ -79,11 +78,7 @@
 
 			<label class="control">
 				Esempio
-				<select
-					bind:value={selectedExampleId}
-					onchange={(event) =>
-						loadSelectedExample((event.currentTarget as HTMLSelectElement).value)}
-				>
+				<select bind:value={selectedExampleId} onchange={loadSelectedExample}>
 					<option value="">Carica un esempio...</option>
 					{#each esempiScheme as example (example.id)}
 						<option value={example.id}>{example.titolo}</option>

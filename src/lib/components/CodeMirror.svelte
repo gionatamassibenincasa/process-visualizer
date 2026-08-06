@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { EditorState } from '@codemirror/state';
 	import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 	import { defaultKeymap } from '@codemirror/commands';
+	import { fromAction } from 'svelte/attachments';
 
 	interface Props {
 		doc?: string;
@@ -10,14 +10,9 @@
 
 	let { doc = $bindable('') }: Props = $props();
 
-	let container = $state<HTMLElement | null>(null);
-	let editorView: EditorView | null = null;
-
-	onMount(() => {
-		if (!container) return;
-
+	function syncEditor(container: HTMLElement, initialDoc: string) {
 		const state = EditorState.create({
-			doc,
+			doc: initialDoc,
 			extensions: [
 				lineNumbers(),
 				keymap.of(defaultKeymap),
@@ -29,42 +24,57 @@
 			]
 		});
 
-		editorView = new EditorView({
+		const editorView = new EditorView({
 			state,
 			parent: container
 		});
 
-		return () => {
-			editorView?.destroy();
-			editorView = null;
-		};
-	});
+		return {
+			update(nextDoc: string) {
+				const currentDoc = editorView.state.doc.toString();
 
-	$effect(() => {
-		if (!editorView) return;
+				if (currentDoc === nextDoc) return;
 
-		const currentDoc = editorView.state.doc.toString();
-
-		if (currentDoc === doc) return;
-
-		editorView.dispatch({
-			changes: {
-				from: 0,
-				to: editorView.state.doc.length,
-				insert: doc
+				editorView.dispatch({
+					changes: {
+						from: 0,
+						to: editorView.state.doc.length,
+						insert: nextDoc
+					}
+				});
+			},
+			destroy() {
+				editorView.destroy();
 			}
-		});
-	});
+		};
+	}
 </script>
 
-<div class="editor-wrapper" bind:this={container}></div>
+<div class="editor-wrapper" {@attach fromAction(syncEditor, () => doc)}></div>
 
 <style>
 	.editor-wrapper {
 		width: 100%;
 		height: 100%;
 	}
-	:global(.cm-editor) {
+
+	.editor-wrapper :global(.cm-editor) {
 		height: 100%;
+	}
+
+	.editor-wrapper :global(.cm-editor .cm-content) {
+		caret-color: #f8fafc;
+	}
+
+	.editor-wrapper :global(.cm-editor .cm-cursor) {
+		border-left: 2px solid #f8fafc;
+	}
+
+	.editor-wrapper :global(.cm-editor.cm-focused .cm-content) {
+		caret-color: #38bdf8;
+	}
+
+	.editor-wrapper :global(.cm-editor.cm-focused .cm-cursor) {
+		border-left-color: #38bdf8;
 	}
 </style>

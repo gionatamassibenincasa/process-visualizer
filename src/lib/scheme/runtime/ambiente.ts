@@ -1,3 +1,11 @@
+export interface SnapshotScopeAmbiente {
+	binding: Record<string, string>;
+}
+
+export interface SnapshotAmbiente {
+	scope: SnapshotScopeAmbiente[];
+}
+
 export class Ambiente<Valore = unknown> {
 	private padre: Ambiente<Valore> | null;
 	private tabella: Map<string, Valore>;
@@ -33,5 +41,18 @@ export class Ambiente<Valore = unknown> {
 
 	numElementi(): number {
 		return this.tabella.size;
+	}
+
+	istantanea(serializzaValore: (valore: Valore) => string): SnapshotAmbiente {
+		const scopePadre = this.padre?.istantanea(serializzaValore).scope ?? [];
+		const binding = Object.fromEntries(
+			[...this.tabella.entries()]
+				.sort(([simboloA], [simboloB]) => simboloA.localeCompare(simboloB))
+				.map(([simbolo, valore]) => [simbolo, serializzaValore(valore)])
+		);
+
+		return {
+			scope: [...scopePadre, { binding }]
+		};
 	}
 }

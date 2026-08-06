@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { FormatterScheme } from '../ast/formatter';
-import { creaAmbienteGlobale } from './ambienteStandard';
+import { creaAmbiente } from './ambienteStandard';
 import { StepperScheme } from './stepper';
 
 describe('Integrazione parser-stepper', () => {
     test('valuta programma con define seguito da applicazione', () => {
-        const env = creaAmbienteGlobale();
+        const env = creaAmbiente();
         const stepper = new StepperScheme(env);
         const formatter = new FormatterScheme();
 
@@ -20,7 +20,7 @@ describe('Integrazione parser-stepper', () => {
     });
 
     test('riduce un if parsato da sorgente', () => {
-        const env = creaAmbienteGlobale();
+        const env = creaAmbiente();
         const stepper = new StepperScheme(env);
         const formatter = new FormatterScheme();
 
@@ -32,7 +32,7 @@ describe('Integrazione parser-stepper', () => {
     });
 
     test('riduce and e or parsati da sorgente', () => {
-        const env = creaAmbienteGlobale();
+        const env = creaAmbiente();
         const stepper = new StepperScheme(env);
         const formatter = new FormatterScheme();
 
@@ -45,8 +45,41 @@ describe('Integrazione parser-stepper', () => {
         expect(orFinale).toContain('#t');
     });
 
+    test('applica primo a una lista quotata', () => {
+        const env = creaAmbiente();
+        const stepper = new StepperScheme(env);
+        const formatter = new FormatterScheme();
+
+        const passi = stepper.passiDaSorgente('(primo (quote (1 2 3)))', 20);
+        const outputFinale = formatter.stampa(passi[passi.length - 1].astSuccessivo);
+
+        expect(passi[passi.length - 1].èTerminato).toBe(true);
+        expect(outputFinale).toBe('1');
+    });
+
+    test('mostra la riscrittura lambda nella traccia ricorsiva', () => {
+        const env = creaAmbiente();
+        const stepper = new StepperScheme(env);
+        const formatter = new FormatterScheme();
+        const sorgente = `
+            (define addizione
+              (lambda (n m)
+                (cond
+                  ((zero? m) n)
+                  (else (s (addizione n (p m)))))))
+            (addizione 3 2)
+        `;
+
+        const timeline = formatter.formattaTimelineStepping(stepper.passiDaSorgente(sorgente, 100));
+        const outputFinale = timeline[timeline.length - 1].successivo;
+
+        expect(timeline.some(passo => passo.regola.includes('Riscrittura lambda: n ← 3, m ← 2'))).toBe(true);
+        expect(timeline.some(passo => passo.successivo.includes('(s (addizione 3 (p 2)))'))).toBe(true);
+        expect(outputFinale).toContain('5');
+    });
+
     test('esegue ricorsione con fattoriale', () => {
-        const env = creaAmbienteGlobale();
+        const env = creaAmbiente();
         const stepper = new StepperScheme(env);
         const formatter = new FormatterScheme();
 

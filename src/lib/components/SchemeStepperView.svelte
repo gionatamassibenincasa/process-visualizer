@@ -10,6 +10,7 @@
 	let { timeline, currentStepIndex, onStepChange }: Props = $props();
 
 	let currentSnapshot = $derived(timeline[currentStepIndex] ?? null);
+	let currentAmbienteScopes = $derived(currentSnapshot?.ambiente?.scope ?? []);
 	let currentStatus = $derived.by(() => {
 		if (!currentSnapshot) {
 			return '—';
@@ -21,6 +22,10 @@
 
 		return currentSnapshot.haRidotto ? 'Riduzione' : 'Nessuna riduzione';
 	});
+
+	function getScopeTitle(index: number) {
+		return index === 0 ? 'Scope globale' : `Scope locale ${index}`;
+	}
 
 	function goToStep(index: number) {
 		if (timeline.length === 0) {
@@ -75,6 +80,31 @@
 				<h3>Stato Successivo</h3>
 				<div class="code-block result">
 					<pre><code>{currentSnapshot.successivo}</code></pre>
+				</div>
+			</div>
+
+			<div class="card">
+				<h3>Ambiente</h3>
+				<div class="environment-list">
+					{#each currentAmbienteScopes as scope, scopeIndex (scope)}
+						<section class="environment-scope">
+							<h4>{getScopeTitle(scopeIndex)}</h4>
+							<div class="environment-bindings">
+								{#each Object.entries(scope.binding) as [bindingName, bindingValue] (`scope-${scopeIndex}-binding-${bindingName}`)}
+									<div class="binding-row">
+										<span class="binding-name">{bindingName}</span>
+										<code class="binding-value">{bindingValue}</code>
+									</div>
+								{:else}
+									<div class="binding-row binding-row-empty">
+										<span class="binding-empty">Nessun binding in questo scope.</span>
+									</div>
+								{/each}
+							</div>
+						</section>
+					{:else}
+						<p class="environment-empty">Nessuno scope disponibile.</p>
+					{/each}
 				</div>
 			</div>
 
@@ -228,5 +258,57 @@
 
 	.metadata-item-wide {
 		grid-column: 1 / -1;
+	}
+
+	.environment-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.environment-scope {
+		background: #090d16;
+		border: 1px solid #334155;
+		border-radius: 6px;
+		padding: 0.75rem;
+	}
+
+	.environment-scope h4 {
+		margin: 0 0 0.75rem;
+		font-size: 0.85rem;
+		color: #cbd5e1;
+	}
+
+	.environment-bindings {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.binding-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.5rem;
+	}
+
+	.binding-name {
+		color: #38bdf8;
+		font-weight: 600;
+		word-break: break-word;
+	}
+
+	.binding-value {
+		color: #e2e8f0;
+		background: rgba(148, 163, 184, 0.12);
+		border-radius: 4px;
+		padding: 0.15rem 0.4rem;
+		word-break: break-word;
+	}
+
+	.binding-row-empty,
+	.environment-empty {
+		color: #94a3b8;
 	}
 </style>

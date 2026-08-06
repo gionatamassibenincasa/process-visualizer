@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { FormatterScheme } from '../ast/formatter';
-import { creaAmbienteGlobale } from '../runtime/ambienteStandard';
+import { creaAmbiente } from '../runtime/ambienteStandard';
 import { StepperScheme } from '../runtime/stepper';
 import { esempiScheme } from './catalog';
 
@@ -14,7 +14,7 @@ describe('Catalogo esempi Scheme', () => {
 	for (const esempio of esempiScheme) {
 		test(`esegue "${esempio.id}" secondo il contratto dichiarato`, () => {
 			const esegui = () => {
-				const stepper = new StepperScheme(creaAmbienteGlobale());
+				const stepper = new StepperScheme(creaAmbiente());
 				const formatter = new FormatterScheme();
 				const passi = stepper.passiDaSorgente(esempio.sorgente);
 				return formatter.formattaTimelineStepping(passi);

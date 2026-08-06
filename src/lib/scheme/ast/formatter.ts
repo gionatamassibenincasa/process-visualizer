@@ -14,6 +14,7 @@ import {
 } from './ast';
 import type { VisitorAST } from './ast';
 import type { PassoStepping } from '../runtime/stepper';
+import type { SnapshotAmbiente } from '../runtime/ambiente';
 
 /**
  * Metadati opzionali della forma top-level attualmente ridotta.
@@ -34,6 +35,7 @@ export interface SnapshotPassoStepping {
 	terminato: boolean;
 	haRidotto: boolean;
 	focusProgramma: FocusFormaProgramma | null;
+	ambiente: SnapshotAmbiente;
 }
 
 /**
@@ -77,7 +79,8 @@ export class FormatterScheme implements VisitorAST<string> {
 			successivo,
 			terminato: passo.èTerminato,
 			haRidotto: precedente !== successivo,
-			focusProgramma: this.estraiFocusProgramma(passo.regolaApplicata)
+			focusProgramma: this.estraiFocusProgramma(passo.regolaApplicata),
+			ambiente: passo.ambiente
 		};
 	}
 

@@ -1,17 +1,24 @@
 // file: stepper.ts
 import {
     ApplicazioneAST,
+    AndAST,
     AtomoAST,
+    CitazioneAST,
     CondAST,
     DefineAST,
     IfAST,
     LambdaAST,
     ListaAST,
     NodoAST,
+    OrAST,
     ProgrammaAST,
 } from '../ast/ast';
+import { Atomo } from '../ast/atomo';
+import { Coppia } from '../ast/coppia';
+import { Lista } from '../ast/lista';
 import { parseProgrammaDaSorgente } from '../ast/parser';
-import { Ambiente } from './ambiente';
+import { Ambiente, type SnapshotAmbiente } from './ambiente';
+import { registroAmbienti, profiloAmbientePredefinito, AmbienteNonTrovatoError, creaAmbiente} from './registroAmbienti';
 import type { Chiusura, FunzionePrimitiva, ValoreScheme } from './valori';
 
 export interface PassoStepping {
@@ -19,13 +26,66 @@ export interface PassoStepping {
     astSuccessivo: NodoAST;
     regolaApplicata: string;
     èTerminato: boolean;
+    ambiente: SnapshotAmbiente;
+}
+
+type PassoInterno = Omit<PassoStepping, 'ambiente'>;
+
+/**
+ * Utility per estrarre l'id dell'ambiente dalla prima riga del sorgente:
+ * ; ambiente: <id-ambiente>
+ */
+export function leggiDichiarazioneAmbiente(sorgente: string): string | null {
+    const righe = sorgente.split(/\r?\n/);
+    if (righe.length === 0) {
+        return null;
+    }
+
+    const primaRiga = righe[0].trim();
+    const match = primaRiga.match(/^;\s*ambiente:\s*(\S+)$/);
+    return match ? match[1] : null;
 }
 
 export class StepperScheme {
     private env: Ambiente<ValoreScheme>;
 
-    constructor(env?: Ambiente<ValoreScheme>) {
-        this.env = env || new Ambiente<ValoreScheme>();
+    /**
+     * Inizializza lo StepperScheme.
+     * @param envOrId Un'istanza di Ambiente esistente oppure l'ID dell'ambiente da creare.
+     *                Se non specificato, viene creato l'ambiente di default ("standard").
+     */
+    constructor(envOrId?: Ambiente<ValoreScheme> | string) {
+        if (typeof envOrId === 'string') {
+            this.env = creaAmbiente(envOrId);
+        } else if (envOrId instanceof Ambiente) {
+            this.env = envOrId;
+        } else {
+            // Se undefined o non passato, creaAmbiente() usa il default ('standard')
+            this.env = creaAmbiente();
+        }
+    }
+
+    /**
+     * Factory Method: Istanzia lo StepperScheme dal codice sorgente.
+     * 
+     * Priorità dell'ambiente:
+     * 1. `ambienteOverride` (se passato esplicitamente, ad es. da CLI)
+     * 2. ID dell'ambiente specificato nella prima riga del file (es: `; ambiente: minimo-numeri-naturali`)
+     * 3. Ambiente di default ("standard")
+     */
+    static daSorgente(sorgente: string, ambienteOverride?: Ambiente<ValoreScheme>): StepperScheme {
+        if (ambienteOverride) {
+            return new StepperScheme(ambienteOverride);
+        }
+
+        const idDichiarato = leggiDichiarazioneAmbiente(sorgente);
+        if (idDichiarato) {
+            // Passeremo la stringa al costruttore, che invocherà creaAmbiente(idDichiarato)
+            // sollevando AmbienteNonTrovatoError se l'ID è errato.
+            return new StepperScheme(idDichiarato);
+        }
+
+        return new StepperScheme();
     }
 
     /**
@@ -88,60 +148,192 @@ export class StepperScheme {
         return new AtomoAST(String(valore));
     }
 
-    private nodoFinaleInValore(nodo: NodoAST, env: Ambiente<ValoreScheme>): ValoreScheme {
+    private valoreDaCitazione(espressione: CitazioneAST['espressione']): ValoreScheme {
+        if (espressione instanceof Atomo) {
+            return espressione.valore;
+        }
+
+        if (espressione instanceof Lista) {
+            const elementi: ValoreScheme[] = [];
+            let listaCorrente: Lista | null = espressione;
+
+            while (listaCorrente !== null && !listaCorrente.vuoto()) {
+                const elemento = listaCorrente.primo;
+                if (elemento === null) {
+                    elementi.push([]);
+                } else {
+                    elementi.push(this.valoreDaCitazione(elemento));
+                }
+                listaCorrente = listaCorrente.resto;
+            }
+
+            return elementi;
+        }
+
+        if (espressione instanceof Coppia) {
+            throw new Error('Le coppie puntate quotate non sono ancora supportate dal runtime.');
+        }
+
+        if (espressione instanceof AtomoAST) {
+            if (typeof espressione.valore === 'symbol') {
+                throw new Error('I simboli JavaScript non sono valori Scheme supportati.');
+            }
+
+            return espressione.valore;
+        }
+
+        throw new Error('Datum citato non supportato dal runtime.');
+    }
+
+    private valoreDaNodo(nodo: NodoAST, env: Ambiente<ValoreScheme>): ValoreScheme | undefined {
         if (nodo instanceof AtomoAST) {
             return this.atomoInValore(nodo, env);
+        }
+
+        if (nodo instanceof CitazioneAST) {
+            return this.valoreDaCitazione(nodo.espressione);
         }
 
         if (nodo instanceof LambdaAST) {
             return this.creaChiusuraDaLambda(nodo, env);
         }
 
-        throw new Error('Impossibile convertire il nodo finale in un valore runtime.');
+        return undefined;
     }
 
-    private valutaNodoFinoAValore(nodo: NodoAST, env: Ambiente<ValoreScheme>, maxPassiInterni: number = 2000): ValoreScheme {
-        let corrente = nodo;
-
-        for (let i = 0; i < maxPassiInterni; i++) {
-            const passo = this.passo(corrente, env);
-            if (passo.èTerminato) {
-                return this.nodoFinaleInValore(passo.astSuccessivo, env);
-            }
-            corrente = passo.astSuccessivo;
+    private serializzaValore(valore: ValoreScheme): string {
+        if (typeof valore === 'boolean') {
+            return valore ? '#t' : '#f';
         }
 
-        throw new Error(`Limite massimo di ${maxPassiInterni} passi interni raggiunto nella valutazione di una chiusura.`);
-    }
-
-    private valutaCorpoChiusura(corpo: NodoAST[], env: Ambiente<ValoreScheme>): ValoreScheme {
-        let risultato: ValoreScheme = null;
-
-        for (const forma of corpo) {
-            risultato = this.valutaNodoFinoAValore(forma, env);
+        if (typeof valore === 'number' || typeof valore === 'string') {
+            return String(valore);
         }
 
-        return risultato;
+        if (valore === null) {
+            return 'null';
+        }
+
+        if (typeof valore === 'function') {
+            return '#<primitiva>';
+        }
+
+        if (this.èChiusura(valore)) {
+            return '#<chiusura>';
+        }
+
+        return `(${valore.map(elemento => this.serializzaValore(elemento)).join(' ')})`;
     }
 
-    private applicaChiusura(chiusura: Chiusura, argomenti: AtomoAST[], envChiamata: Ambiente<ValoreScheme>): ValoreScheme {
+    private istanziaCorpoChiusura(chiusura: Chiusura, argomenti: ValoreScheme[]): NodoAST {
         if (chiusura.parametri.length !== argomenti.length) {
             throw new Error(
                 `Arity mismatch: attesi ${chiusura.parametri.length} argomenti, ricevuti ${argomenti.length}.`
             );
         }
 
-        const envLocale = new Ambiente<ValoreScheme>(chiusura.ambienteChiusura);
-
-        for (let i = 0; i < chiusura.parametri.length; i++) {
-            const nomeParametro = chiusura.parametri[i];
-            const valoreArgomento = this.atomoInValore(argomenti[i], envChiamata);
-            envLocale.inserisci(nomeParametro, valoreArgomento);
+        const sostituzioni = new Map<string, NodoAST>();
+        for (let i = 0; i < chiusura.parametri.length; i += 1) {
+            sostituzioni.set(chiusura.parametri[i], this.valoreInNodo(argomenti[i]));
         }
 
-        return this.valutaCorpoChiusura(chiusura.corpo, envLocale);
+        const corpo = chiusura.corpo.map(forma => this.sostituisciParametri(forma, sostituzioni));
+        return corpo.length === 1 ? corpo[0] : new ProgrammaAST(corpo);
     }
 
+    private sostituisciParametri(nodo: NodoAST, sostituzioni: ReadonlyMap<string, NodoAST>): NodoAST {
+        if (nodo instanceof AtomoAST) {
+            if (typeof nodo.valore === 'string' && sostituzioni.has(nodo.valore)) {
+                return sostituzioni.get(nodo.valore)!;
+            }
+
+            return new AtomoAST(nodo.valore);
+        }
+
+        if (nodo instanceof CitazioneAST) {
+            return nodo;
+        }
+
+        if (nodo instanceof ProgrammaAST) {
+            return new ProgrammaAST(
+                nodo.forme.map(forma => this.sostituisciParametri(forma, sostituzioni))
+            );
+        }
+
+        if (nodo instanceof DefineAST) {
+            return new DefineAST(
+                new AtomoAST(nodo.nome.valore),
+                this.sostituisciParametri(nodo.valore, sostituzioni)
+            );
+        }
+
+        if (nodo instanceof LambdaAST) {
+            const sostituzioniCorpo = new Map(sostituzioni);
+            for (const parametro of nodo.parametri) {
+                if (typeof parametro.valore === 'string') {
+                    sostituzioniCorpo.delete(parametro.valore);
+                }
+            }
+
+            return new LambdaAST(
+                nodo.parametri.map(parametro => new AtomoAST(parametro.valore)),
+                nodo.corpo.map(forma => this.sostituisciParametri(forma, sostituzioniCorpo))
+            );
+        }
+
+        if (nodo instanceof IfAST) {
+            return new IfAST(
+                this.sostituisciParametri(nodo.condizione, sostituzioni),
+                this.sostituisciParametri(nodo.ramoThen, sostituzioni),
+                this.sostituisciParametri(nodo.ramoElse, sostituzioni)
+            );
+        }
+
+        if (nodo instanceof AndAST) {
+            return new AndAST(
+                nodo.espressioni.map(espressione =>
+                    this.sostituisciParametri(espressione, sostituzioni)
+                )
+            );
+        }
+
+        if (nodo instanceof OrAST) {
+            return new OrAST(
+                nodo.espressioni.map(espressione =>
+                    this.sostituisciParametri(espressione, sostituzioni)
+                )
+            );
+        }
+
+        if (nodo instanceof CondAST) {
+            return new CondAST(
+                nodo.clausole.map(clausola => ({
+                    condizione: this.sostituisciParametri(clausola.condizione, sostituzioni),
+                    conseguenti: clausola.conseguenti.map(conseguente =>
+                        this.sostituisciParametri(conseguente, sostituzioni)
+                    )
+                }))
+            );
+        }
+
+        if (nodo instanceof ApplicazioneAST) {
+            return new ApplicazioneAST(
+                this.sostituisciParametri(nodo.operatore, sostituzioni),
+                nodo.argomenti.map(argomento =>
+                    this.sostituisciParametri(argomento, sostituzioni)
+                )
+            );
+        }
+
+        if (nodo instanceof ListaAST) {
+            return new ListaAST(
+                nodo.elementi.map(elemento => this.sostituisciParametri(elemento, sostituzioni))
+            );
+        }
+
+        return nodo;
+    }
+    
     /**
      * Esegue il parsing del sorgente e applica riduzioni step-by-step.
      *
@@ -169,16 +361,51 @@ export class StepperScheme {
     }
 
     /**
+     * Esegue il parsing del sorgente ed emette le riduzioni step-by-step in modalità streaming.
+     *
+     * @param sorgente - Programma Scheme testuale.
+     * @param maxPassi - Limite massimo di riduzioni per evitare loop infiniti.
+     * @yields Ciascun PassoStepping calcolato in tempo reale.
+     * @throws {Error} Se viene raggiunto il limite massimo di passi senza che il programma sia terminato.
+     */
+    *passiStream(sorgente: string, maxPassi: number = 200): Generator<PassoStepping> {
+        const programma = parseProgrammaDaSorgente(sorgente);
+        let corrente: NodoAST = programma;
+
+        for (let i = 0; i < maxPassi; i++) {
+            const passo = this.passo(corrente, this.env);
+            yield passo;
+
+            if (passo.èTerminato) {
+                return;
+            }
+
+            corrente = passo.astSuccessivo;
+        }
+
+        throw new Error(`Limite massimo di ${maxPassi} passi raggiunto.`);
+    }
+
+    /**
      * Esegue un singolo passo di riduzione sull'AST dato l'ambiente corrente.
      */
     passo(nodo: NodoAST, env: Ambiente<ValoreScheme> = this.env): PassoStepping {
+        const passo = this.passoInterno(nodo, env);
+
+        return {
+            ...passo,
+            ambiente: env.istantanea(valore => this.serializzaValore(valore)),
+        };
+    }
+
+    private passoInterno(nodo: NodoAST, env: Ambiente<ValoreScheme>): PassoInterno {
         // ==========================================
         // 0. PROGRAMMA (sequenza di forme)
         // ==========================================
         if (nodo instanceof ProgrammaAST) {
             for (let i = 0; i < nodo.forme.length; i++) {
                 const forma = nodo.forme[i];
-                const subPasso = this.passo(forma, env);
+                const subPasso = this.passoInterno(forma, env);
 
                 const èFormaImmutata = subPasso.èTerminato && subPasso.astSuccessivo === forma;
                 if (èFormaImmutata) {
@@ -246,7 +473,7 @@ export class StepperScheme {
             }
 
             if (!(nodo.valore instanceof AtomoAST)) {
-                const subPasso = this.passo(nodo.valore, env);
+                const subPasso = this.passoInterno(nodo.valore, env);
                 return {
                     astPrecedente: nodo,
                     astSuccessivo: new DefineAST(nodo.nome, subPasso.astSuccessivo),
@@ -284,7 +511,7 @@ export class StepperScheme {
                 };
             }
 
-            const subPasso = this.passo(nodo.condizione, env);
+            const subPasso = this.passoInterno(nodo.condizione, env);
             if (subPasso.èTerminato && subPasso.astSuccessivo === nodo.condizione) {
                 throw new Error("Errore di Runtime: la condizione di 'if/se' non si riduce a un booleano.");
             }
@@ -332,7 +559,7 @@ export class StepperScheme {
                 };
             }
 
-            const subPasso = this.passo(primaClausola.condizione, env);
+            const subPasso = this.passoInterno(primaClausola.condizione, env);
             const nuoveClausole = [...nodo.clausole];
             nuoveClausole[0] = { ...primaClausola, condizione: subPasso.astSuccessivo };
 
@@ -352,7 +579,7 @@ export class StepperScheme {
             const argomentiNodi = nodo.argomenti;
 
             if (!(operatoreNodo instanceof AtomoAST) && !(operatoreNodo instanceof LambdaAST)) {
-                const subPasso = this.passo(operatoreNodo, env);
+                const subPasso = this.passoInterno(operatoreNodo, env);
                 return {
                     astPrecedente: nodo,
                     astSuccessivo: new ApplicazioneAST(subPasso.astSuccessivo, argomentiNodi),
@@ -393,12 +620,13 @@ export class StepperScheme {
                 fn = this.creaChiusuraDaLambda(operatoreNodo, env);
             }
 
-            const tuttiArgomentiRidotti = argomentiNodi.every(arg => arg instanceof AtomoAST);
+            const argValori = argomentiNodi.map(argomento => this.valoreDaNodo(argomento, env));
+            const tuttiArgomentiRidotti = argValori.every(
+                (argomento): argomento is ValoreScheme => argomento !== undefined
+            );
             if (tuttiArgomentiRidotti) {
-                const argomentiAtomici = argomentiNodi as AtomoAST[];
 
                 if (typeof fn === 'function') {
-                    const argValori = argomentiAtomici.map(arg => this.atomoInValore(arg, env));
                     const risultato = (fn as FunzionePrimitiva)(...argValori);
                     return {
                         astPrecedente: nodo,
@@ -410,11 +638,13 @@ export class StepperScheme {
 
                 // PATCH 2 + PATCH 3: rappresentazione chiusura + applicazione chiusura.
                 if (this.èChiusura(fn)) {
-                    const risultato = this.applicaChiusura(fn, argomentiAtomici, env);
+                    const corpoIstanziato = this.istanziaCorpoChiusura(fn, argValori);
                     return {
                         astPrecedente: nodo,
-                        astSuccessivo: this.valoreInNodo(risultato),
-                        regolaApplicata: `Applicazione chiusura con argomenti [${argomentiAtomici.map(a => String(a.valore)).join(', ')}]`,
+                        astSuccessivo: corpoIstanziato,
+                        regolaApplicata: `Riscrittura lambda: ${fn.parametri
+                            .map((parametro, indice) => `${parametro} ← ${this.serializzaValore(argValori[indice])}`)
+                            .join(', ')}`,
                         èTerminato: false,
                     };
                 }
@@ -422,7 +652,7 @@ export class StepperScheme {
 
             for (let i = 0; i < argomentiNodi.length; i++) {
                 if (!(argomentiNodi[i] instanceof AtomoAST)) {
-                    const subPasso = this.passo(argomentiNodi[i], env);
+                    const subPasso = this.passoInterno(argomentiNodi[i], env);
                     const nuoviNodiArg = [...argomentiNodi];
                     nuoviNodiArg[i] = subPasso.astSuccessivo;
 
@@ -440,7 +670,7 @@ export class StepperScheme {
         // 6. COMPATIBILITA LEGACY (ListaAST)
         // ==========================================
         if (nodo instanceof ListaAST && nodo.elementi.length > 0) {
-            return this.passo(new ApplicazioneAST(nodo.elementi[0], nodo.elementi.slice(1)), env);
+            return this.passoInterno(new ApplicazioneAST(nodo.elementi[0], nodo.elementi.slice(1)), env);
         }
 
         return {

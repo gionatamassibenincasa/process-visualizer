@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
-import { creaAmbienteGlobale } from './ambienteStandard';
+import { creaAmbiente } from './ambienteStandard';
 import type { FunzionePrimitiva, ValoreScheme } from './valori';
 
 function applicaPrimitiva(nome: string, ...argomenti: ValoreScheme[]): ValoreScheme {
-    const valore = creaAmbienteGlobale().applica(nome);
+    const valore = creaAmbiente().applica(nome);
     if (typeof valore !== 'function') {
         throw new Error(`'${nome}' non e una primitiva.`);
     }
@@ -12,10 +12,13 @@ function applicaPrimitiva(nome: string, ...argomenti: ValoreScheme[]): ValoreSch
 }
 
 test('espone la lista vuota e tutte le primitive italiane', () => {
-    const ambiente = creaAmbienteGlobale();
+    const ambiente = creaAmbiente();
 
     expect(ambiente.applica('lista-vuota')).toEqual([]);
     expect(typeof ambiente.applica('atomo?')).toBe('function');
+    expect(typeof ambiente.applica('zero?')).toBe('function');
+    expect(typeof ambiente.applica('successore')).toBe('function');
+    expect(typeof ambiente.applica('predecessore')).toBe('function');
     expect(typeof ambiente.applica('lista?')).toBe('function');
     expect(typeof ambiente.applica('lista-vuota?')).toBe('function');
     expect(typeof ambiente.applica('uguale?')).toBe('function');
@@ -26,7 +29,7 @@ test('espone la lista vuota e tutte le primitive italiane', () => {
 });
 
 test('mantiene gli alias Scheme alle stesse primitive italiane', () => {
-    const ambiente = creaAmbienteGlobale();
+    const ambiente = creaAmbiente();
 
     expect(ambiente.applica('lista?')).toBe(ambiente.applica('list?'));
     expect(ambiente.applica('lista-vuota?')).toBe(ambiente.applica('null?'));
@@ -35,6 +38,10 @@ test('mantiene gli alias Scheme alle stesse primitive italiane', () => {
     expect(ambiente.applica('resto')).toBe(ambiente.applica('cdr'));
     expect(ambiente.applica('anteponi')).toBe(ambiente.applica('cons'));
     expect(ambiente.applica('lista')).toBe(ambiente.applica('list'));
+    expect(ambiente.applica('successore')).toBe(ambiente.applica('add1'));
+    expect(ambiente.applica('successore')).toBe(ambiente.applica('s'));
+    expect(ambiente.applica('predecessore')).toBe(ambiente.applica('sub1'));
+    expect(ambiente.applica('predecessore')).toBe(ambiente.applica('p'));
 });
 
 test('costruisce e naviga liste senza modificare la lista di origine', () => {
@@ -48,7 +55,7 @@ test('costruisce e naviga liste senza modificare la lista di origine', () => {
 });
 
 test('riconosce atomi, liste e lista vuota', () => {
-    const listaVuota = creaAmbienteGlobale().applica('lista-vuota');
+    const listaVuota = creaAmbiente().applica('lista-vuota');
     const lista = applicaPrimitiva('lista', 1);
 
     expect(applicaPrimitiva('atomo?', 1)).toBe(true);
@@ -58,6 +65,18 @@ test('riconosce atomi, liste e lista vuota', () => {
     expect(applicaPrimitiva('list?', 1)).toBe(false);
     expect(applicaPrimitiva('lista-vuota?', listaVuota)).toBe(true);
     expect(applicaPrimitiva('null?', lista)).toBe(false);
+});
+
+test('espone predicati e successori numerici', () => {
+    expect(applicaPrimitiva('zero?', 0)).toBe(true);
+    expect(applicaPrimitiva('zero?', 1)).toBe(false);
+    expect(applicaPrimitiva('successore', 4)).toBe(5);
+    expect(applicaPrimitiva('add1', 4)).toBe(5);
+    expect(applicaPrimitiva('s', 4)).toBe(5);
+    expect(applicaPrimitiva('predecessore', 4)).toBe(3);
+    expect(applicaPrimitiva('sub1', 4)).toBe(3);
+    expect(applicaPrimitiva('p', 4)).toBe(3);
+    expect(() => applicaPrimitiva('zero?', '0')).toThrow("'zero?' richiede argomenti numerici.");
 });
 
 test('confronta valori e gestisce gli errori delle primitive di lista', () => {

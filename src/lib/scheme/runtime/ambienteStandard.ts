@@ -1,6 +1,7 @@
 // file: runtime/ambienteStandard.ts
 import { Ambiente } from './ambiente';
 import type { FunzionePrimitiva, ListaScheme, ValoreScheme } from './valori';
+import type { ProfiloAmbiente } from './profiloAmbiente';
 
 function richiediNumero(valore: ValoreScheme, operatore: string): number {
     if (typeof valore !== 'number') {
@@ -52,7 +53,19 @@ function èAtomo(valore: ValoreScheme): boolean {
     return !Array.isArray(valore);
 }
 
-export function creaAmbienteGlobale(): Ambiente<ValoreScheme> {
+function èZero(valore: ValoreScheme): boolean {
+    return richiediNumero(valore, 'zero?') === 0;
+}
+
+function successore(valore: ValoreScheme): number {
+    return richiediNumero(valore, 'successore') + 1;
+}
+
+function predecessore(valore: ValoreScheme): number {
+    return richiediNumero(valore, 'predecessore') - 1;
+}
+
+export function creaAmbiente(): Ambiente<ValoreScheme> {
     const env = new Ambiente<ValoreScheme>();
 
     // Operatori Aritmetici
@@ -102,11 +115,21 @@ export function creaAmbienteGlobale(): Ambiente<ValoreScheme> {
     const èLista: FunzionePrimitiva = valore => Array.isArray(valore);
     const èListaVuotaPrimitiva: FunzionePrimitiva = èListaVuota;
     const èAtomoPrimitiva: FunzionePrimitiva = èAtomo;
+    const èZeroPrimitiva: FunzionePrimitiva = èZero;
+    const successorePrimitiva: FunzionePrimitiva = successore;
+    const predecessorePrimitiva: FunzionePrimitiva = predecessore;
     const uguale: FunzionePrimitiva = (a, b) => Object.is(a, b);
     const listaVuota: ListaScheme = [];
 
     env.inserisci('lista-vuota', listaVuota);
     env.inserisci('atomo?', èAtomoPrimitiva);
+    env.inserisci('zero?', èZeroPrimitiva);
+    env.inserisci('successore', successorePrimitiva);
+    env.inserisci('add1', successorePrimitiva);
+    env.inserisci('s', successorePrimitiva);
+    env.inserisci('predecessore', predecessorePrimitiva);
+    env.inserisci('sub1', predecessorePrimitiva);
+    env.inserisci('p', predecessorePrimitiva);
     env.inserisci('lista?', èLista);
     env.inserisci('list?', èLista);
     env.inserisci('lista-vuota?', èListaVuotaPrimitiva);
@@ -124,3 +147,13 @@ export function creaAmbienteGlobale(): Ambiente<ValoreScheme> {
 
     return env;
 }
+
+export const profiloStandard: ProfiloAmbiente = {
+    id: 'standard',
+    nome: 'Standard',
+    descrizione: 'Espone primitive aritmetiche, logiche e per le liste.',
+    
+    crea(): Ambiente<ValoreScheme> {
+        return creaAmbiente();
+    }
+};
