@@ -1,38 +1,38 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "docs:build:html",
-      "type": "shell",
-      "command": "./scripts/docs.sh",
-      "args": ["html"],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "docs:build:pdf",
-      "type": "shell",
-      "command": "./scripts/docs.sh",
-      "args": ["pdf"],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "docs:build:all",
-      "type": "shell",
-      "command": "./scripts/docs.sh",
-      "args": ["all"],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "group": "build",
-      "problemMatcher": []
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "docs:build:html",
+			"type": "shell",
+			"command": "./scripts/docs.sh",
+			"args": ["html"],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "docs:build:pdf",
+			"type": "shell",
+			"command": "./scripts/docs.sh",
+			"args": ["pdf"],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "docs:build:all",
+			"type": "shell",
+			"command": "./scripts/docs.sh",
+			"args": ["all"],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"group": "build",
+			"problemMatcher": []
+		}
+	]
 }

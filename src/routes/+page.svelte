@@ -3,20 +3,17 @@
 	import CodeMirror from '#lib/components/CodeMirror.svelte';
 	import StepperView from '#lib/components/SchemeStepperView.svelte';
 	import type { EsempioScheme } from '#lib/scheme/examples/catalog';
-	import {
-		FormatterScheme,
-		type SnapshotPassoStepping
-	} from '#lib/scheme/ast/formatter';
+	import { FormatterScheme, type SnapshotPassoStepping } from '#lib/scheme/ast/formatter';
 	import { StepperScheme } from '#lib/scheme/runtime/stepper';
 
 	let { data } = $props();
-	let esempiScheme = $derived<readonly EsempioScheme[]>(
-        data?.esempi ?? []
-	);
+	let esempiScheme = $derived<readonly EsempioScheme[]>(data?.esempi ?? []);
 
 	// Codice Scheme iniziale
 	//let code = $state(`(define add1 (lambda (n) (+ n 1)))\n(add1 (+ 10 20))`);
-	let code = $state(`; ambiente: minimo-numeri-naturali\n  (definisci addizione\n  (lambda (n m)\n    (cond\n      ((zero? m) n)\n      (altrimenti (s (addizione n (p m)))))))\n\n(addizione 5 3)`);
+	let code = $state(
+		`; ambiente: minimo-numeri-naturali\n  (definisci addizione\n  (lambda (n m)\n    (cond\n      ((zero? m) n)\n      (altrimenti (s (addizione n (p m)))))))\n\n(addizione 5 3)`
+	);
 	let direction = $state<'horizontal' | 'vertical'>('horizontal');
 	let rightMode = $state<'output' | 'stepper'>('stepper');
 	let selectedExampleId = $state('');

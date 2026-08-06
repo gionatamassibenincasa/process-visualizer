@@ -13,7 +13,7 @@ import {
 	LambdaAST,
 	NodoAST,
 	OrAST,
-	ProgrammaAST,
+	ProgrammaAST
 } from './ast';
 import type { ClausolaCond } from './ast';
 
@@ -162,7 +162,9 @@ export class ParserScheme {
 	private parseIf(): NodoAST {
 		const condizione = this.parseEspressione();
 		const ramoThen = this.parseEspressione();
-		const ramoElse = this.check(TipoDiParole.ParentesiChiusa) ? new AtomoAST(false) : this.parseEspressione();
+		const ramoElse = this.check(TipoDiParole.ParentesiChiusa)
+			? new AtomoAST(false)
+			: this.parseEspressione();
 		this.consume(TipoDiParole.ParentesiChiusa, 'Attesa parentesi chiusa dopo if.');
 		return new IfAST(condizione, ramoThen, ramoElse);
 	}
@@ -226,7 +228,10 @@ export class ParserScheme {
 				return new AtomoAST(simbolo);
 			}
 			default:
-				throw this.error(token, `Token inatteso '${String(token.valore)}' nel parsing di un atomo.`);
+				throw this.error(
+					token,
+					`Token inatteso '${String(token.valore)}' nel parsing di un atomo.`
+				);
 		}
 	}
 
@@ -254,18 +259,28 @@ export class ParserScheme {
 		}
 
 		const elementi: DatumValue[] = [];
-		while (!this.check(TipoDiParole.ParentesiChiusa) && !this.check(TipoDiParole.Punto) && !this.isAtEnd()) {
+		while (
+			!this.check(TipoDiParole.ParentesiChiusa) &&
+			!this.check(TipoDiParole.Punto) &&
+			!this.isAtEnd()
+		) {
 			const datum = this.parseDatum();
 			if (datum instanceof Atomo || datum instanceof Lista || datum instanceof Coppia) {
 				elementi.push(datum);
 			} else {
-				throw this.error(this.peek(), 'Il datum in lista citata deve essere Atomo, Lista o Coppia.');
+				throw this.error(
+					this.peek(),
+					'Il datum in lista citata deve essere Atomo, Lista o Coppia.'
+				);
 			}
 		}
 
 		if (this.check(TipoDiParole.Punto)) {
 			if (elementi.length === 0) {
-				throw this.error(this.peek(), 'Una coppia puntata richiede almeno un elemento prima del punto.');
+				throw this.error(
+					this.peek(),
+					'Una coppia puntata richiede almeno un elemento prima del punto.'
+				);
 			}
 
 			this.advance();

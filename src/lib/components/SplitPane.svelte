@@ -60,7 +60,9 @@
 	<!-- Pannello 1 (Alto / Sinistra) -->
 	<div
 		class="pane"
-		style={direction === 'horizontal' ? `width: ${splitPercentage}%` : `height: ${splitPercentage}%`}
+		style={direction === 'horizontal'
+			? `width: ${splitPercentage}%`
+			: `height: ${splitPercentage}%`}
 	>
 		{@render first()}
 	</div>

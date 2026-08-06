@@ -9,14 +9,9 @@ export type ListaScheme = ValoreScheme[];
 export type FunzionePrimitiva = (...args: ValoreScheme[]) => ValoreScheme;
 
 export interface Chiusura {
-    parametri: string[];
-    corpo: NodoAST[];
-    ambienteChiusura: Ambiente<ValoreScheme>;
+	parametri: string[];
+	corpo: NodoAST[];
+	ambienteChiusura: Ambiente<ValoreScheme>;
 }
 
-export type ValoreScheme =
-    | ValoreAtomicoScheme
-    | FunzionePrimitiva
-    | Chiusura
-    | ListaScheme
-    | null;
+export type ValoreScheme = ValoreAtomicoScheme | FunzionePrimitiva | Chiusura | ListaScheme | null;

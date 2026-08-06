@@ -6,7 +6,7 @@ import { esempiScheme } from './catalog';
 
 describe('Catalogo esempi Scheme', () => {
 	test('espone identificatori univoci', () => {
-		const identificatori = esempiScheme.map(esempio => esempio.id);
+		const identificatori = esempiScheme.map((esempio) => esempio.id);
 
 		expect(new Set(identificatori).size).toBe(identificatori.length);
 	});
