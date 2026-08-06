@@ -2,18 +2,17 @@
 	import SplitPane from '#lib/components/SplitPane.svelte';
 	import CodeMirror from '#lib/components/CodeMirror.svelte';
 	import StepperView from '#lib/components/SchemeStepperView.svelte';
-	import {
-		esempiScheme as catalogoEsempi,
-		type EsempioScheme
-	} from '#lib/scheme/examples/catalog';
+	import type { EsempioScheme } from '#lib/scheme/examples/catalog';
 	import {
 		FormatterScheme,
 		type SnapshotPassoStepping
 	} from '#lib/scheme/ast/formatter';
-	// import { creaAmbiente } from '#lib/scheme/runtime/registroAmbienti';
 	import { StepperScheme } from '#lib/scheme/runtime/stepper';
 
-	const esempiScheme: readonly EsempioScheme[] = catalogoEsempi;
+	let { data } = $props();
+	let esempiScheme = $derived<readonly EsempioScheme[]>(
+        data?.esempi ?? []
+	);
 
 	// Codice Scheme iniziale
 	//let code = $state(`(define add1 (lambda (n) (+ n 1)))\n(add1 (+ 10 20))`);
