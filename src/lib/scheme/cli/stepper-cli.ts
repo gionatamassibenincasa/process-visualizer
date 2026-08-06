@@ -9,7 +9,7 @@ import { creaAmbiente, AmbienteNonTrovatoError } from '../runtime/registroAmbien
 import { StepperScheme } from '../runtime/stepper';
 import { Ambiente } from '../runtime/ambiente';
 import type { ValoreScheme } from '../runtime/valori';
-import type { PassoStepping } from '../ast/stepperTypes';
+import type { PassoStepping } from '../runtime/stepper';
 
 type OutputFormat = 'text' | 'json';
 

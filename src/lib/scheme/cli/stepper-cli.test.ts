@@ -16,6 +16,8 @@ describe('stepper-cli', () => {
                 filePath: file,
                 maxPassi: 30,
                 format: 'text',
+                interactive: false,
+                ambiente: undefined, 
             });
 
             expect(output).toContain('==>');
@@ -37,6 +39,8 @@ describe('stepper-cli', () => {
                 filePath: file,
                 maxPassi: 30,
                 format: 'json',
+                interactive: false,
+                ambiente: undefined, 
             });
 
             const parsed = JSON.parse(output) as {
