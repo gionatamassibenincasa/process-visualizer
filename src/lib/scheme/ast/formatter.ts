@@ -1,3 +1,23 @@
+// file: src/lib/scheme/ast/formatter.ts
+/**
+ * Modulo per la formattazione e serializzazione degli albero AST Scheme.
+ *
+ * Implementa il pattern `VisitorAST` per convertire nodi dell'AST (`NodoAST`) in
+ * codice sorgente Scheme formattato e leggibile. Produce inoltre snapshot dei passi
+ * e timeline testuali per la visualizzazione dello stepper nella UI o da riga di comando.
+ *
+ * @module ast/formatter
+ * @example
+ * ```typescript
+ * import { FormatterScheme } from './formatter';
+ * import { parseProgrammaDaSorgente } from './parser';
+ *
+ * const ast = parseProgrammaDaSorgente('(+ 1 2)');
+ * const formatter = new FormatterScheme();
+ * console.log(formatter.stampa(ast)); // "(+ 1 2)"
+ * ```
+ */
+
 import {
 	NodoAST,
 	ProgrammaAST,
@@ -17,56 +37,82 @@ import type { PassoStepping } from '../runtime/stepper';
 import type { SnapshotAmbiente } from '../runtime/ambiente';
 
 /**
- * Metadati opzionali della forma top-level attualmente ridotta.
+ * Metadati della forma top-level del programma attualmente in fase di riduzione.
  */
 export interface FocusFormaProgramma {
+	/** Indice della forma corrente (1-indexed). */
 	indiceForma: number;
+	/** Numero totale delle forme che compongono il programma. */
 	totaleForme: number;
 }
 
 /**
- * Snapshot serializzabile di un passo, pronta per timeline UI.
+ * Istantanea serializzabile di un singolo passo di riduzione dello stepper.
  */
 export interface SnapshotPassoStepping {
+	/** Indice progressivo del passo (0-indexed). */
 	indice: number;
+	/** Descrizione testuale della regola applicata. */
 	regola: string;
+	/** Codice Scheme dell'AST prima della riduzione. */
 	precedente: string;
+	/** Codice Scheme dell'AST dopo la riduzione. */
 	successivo: string;
+	/** `true` se il programma ha raggiunto il valore finale. */
 	terminato: boolean;
+	/** `true` se lo stato dell'AST è cambiato in questo passo. */
 	haRidotto: boolean;
+	/** Metadati sulla forma top-level in corso di riduzione (se presente). */
 	focusProgramma: FocusFormaProgramma | null;
+	/** Istantanea dell'ambiente di calcolo al passo corrente. */
 	ambiente: SnapshotAmbiente;
 }
 
 /**
- * Formatta un AST Scheme in una stringa leggibile e vicino alla sintassi Lisp.
+ * Formattatore per convertire nodi AST e timeline di stepping in stringhe Scheme leggibili.
+ *
+ * @example
+ * ```typescript
+ * const formatter = new FormatterScheme();
+ * const testo = formatter.stampa(nodoAST);
+ * const timelineText = formatter.formattaTimelineTestuale(passiStepping);
+ * ```
  */
 export class FormatterScheme implements VisitorAST<string> {
 	private indentLevel: number = 0;
 
 	/**
-	 * Restituisce il prefisso di indentazione corrente.
+	 * Restituisce la stringa di spaziatura per l'indentazione corrente.
 	 */
 	private getIndent(): string {
 		return '  '.repeat(this.indentLevel);
 	}
 
 	/**
-	 * Produce la rappresentazione testuale di un nodo AST.
+	 * Converte un qualsiasi nodo dell'AST in una stringa di codice Scheme formattata.
 	 *
-	 * @param nodo - Nodo da formattare.
-	 * @returns La stringa formattata.
+	 * @param nodo - Nodo AST da formattare.
+	 * @returns Rappresentazione testuale del nodo.
+	 * @example
+	 * ```typescript
+	 * const f = new FormatterScheme();
+	 * console.log(f.stampa(new AtomoAST(42))); // "42"
+	 * ```
 	 */
 	stampa(nodo: NodoAST): string {
 		return nodo.accetta(this);
 	}
 
 	/**
-	 * Converte un passo dello stepper in uno snapshot descrittivo adatto alla UI.
+	 * Converte un singolo passo dello stepper in uno snapshot serializzabile per la UI.
 	 *
-	 * @param passo - Passo prodotto dallo stepper.
-	 * @param indice - Indice del passo nella timeline (base 0).
-	 * @returns Snapshot testuale e metadati utili alla visualizzazione.
+	 * @param passo - Passo di stepping da formattare.
+	 * @param indice - Indice posizionale del passo.
+	 * @returns Istanza di {@link SnapshotPassoStepping}.
+	 * @example
+	 * ```typescript
+	 * const snapshot = formatter.formattaPassoStepping(passo, 0);
+	 * ```
 	 */
 	formattaPassoStepping(passo: PassoStepping, indice: number): SnapshotPassoStepping {
 		const precedente = this.stampa(passo.astPrecedente);
@@ -85,20 +131,29 @@ export class FormatterScheme implements VisitorAST<string> {
 	}
 
 	/**
-	 * Converte una lista di passi in una timeline strutturata per front-end.
+	 * Converte un'intera sequenza di passi dello stepper in un array di snapshot per il rendering della timeline UI.
 	 *
-	 * @param passi - Sequenza di passi dello stepper.
-	 * @returns Array ordinato di snapshot pronti per il rendering.
+	 * @param passi - Elenco dei passi registrati dallo stepper.
+	 * @returns Array di {@link SnapshotPassoStepping}.
+	 * @example
+	 * ```typescript
+	 * const timelineUI = formatter.formattaTimelineStepping(passi);
+	 * ```
 	 */
 	formattaTimelineStepping(passi: PassoStepping[]): SnapshotPassoStepping[] {
 		return passi.map((passo, indice) => this.formattaPassoStepping(passo, indice));
 	}
 
 	/**
-	 * Produce una traccia testuale lineare utile per log e debug rapidi.
+	 * Converte una sequenza di passi in un testo multilinea descrittivo utile per log o CLI.
 	 *
-	 * @param passi - Sequenza di passi da serializzare.
-	 * @returns Testo multi-linea con transizioni prima/dopo e regole applicate.
+	 * @param passi - Sequenza di passi dello stepper.
+	 * @returns Testo formattato riga per riga.
+	 * @example
+	 * ```typescript
+	 * const traccia = formatter.formattaTimelineTestuale(passi);
+	 * console.log(traccia);
+	 * ```
 	 */
 	formattaTimelineTestuale(passi: PassoStepping[]): string {
 		const snapshot = this.formattaTimelineStepping(passi);
@@ -111,7 +166,7 @@ export class FormatterScheme implements VisitorAST<string> {
 	}
 
 	/**
-	 * Interpreta la regola del passo per individuare la forma top-level in riduzione.
+	 * Analizza il testo della regola applicata per estrarre l'indice della forma top-level in esecuzione.
 	 */
 	private estraiFocusProgramma(regola: string): FocusFormaProgramma | null {
 		const match = /^Programma: forma (\d+)\/(\d+) ->/.exec(regola);
@@ -125,22 +180,10 @@ export class FormatterScheme implements VisitorAST<string> {
 		};
 	}
 
-	/**
-	 * Formatta un programma come sequenza di forme, una per riga.
-	 *
-	 * @param nodo - Programma da formattare.
-	 * @returns La stringa formattata.
-	 */
 	visitaProgramma(nodo: ProgrammaAST): string {
 		return nodo.forme.map((forma) => forma.accetta(this)).join('\n');
 	}
 
-	/**
-	 * Formatta un nodo atomico.
-	 *
-	 * @param nodo - Nodo atomico da convertire.
-	 * @returns La rappresentazione testuale dell'atomo.
-	 */
 	visitaAtomo(nodo: AtomoAST): string {
 		if (typeof nodo.valore === 'boolean') {
 			return nodo.valore ? '#t' : '#f';
@@ -148,12 +191,6 @@ export class FormatterScheme implements VisitorAST<string> {
 		return String(nodo.valore);
 	}
 
-	/**
-	 * Formatta una citazione aggiungendo il prefisso quote.
-	 *
-	 * @param nodo - Nodo di citazione.
-	 * @returns La stringa formattata.
-	 */
 	visitaCitazione(nodo: CitazioneAST): string {
 		if (nodo.espressione instanceof NodoAST) {
 			return `'${nodo.espressione.accetta(this)}`;
@@ -161,59 +198,29 @@ export class FormatterScheme implements VisitorAST<string> {
 		return `'${nodo.espressione.toString()}`;
 	}
 
-	/**
-	 * Formatta una lista come una sequenza tra parentesi.
-	 *
-	 * @param nodo - Nodo lista.
-	 * @returns La stringa formattata.
-	 */
 	visitaLista(nodo: ListaAST): string {
 		const el = nodo.elementi.map((e) => e.accetta(this)).join(' ');
 		return `(${el})`;
 	}
 
-	/**
-	 * Formatta una definizione di variabile o funzione.
-	 *
-	 * @param nodo - Nodo define.
-	 * @returns La stringa formattata.
-	 */
 	visitaDefine(nodo: DefineAST): string {
 		const nome = nodo.nome.accetta(this);
 		const val = nodo.valore.accetta(this);
 		return `(define ${nome} ${val})`;
 	}
 
-	/**
-	 * Formatta una lambda in sintassi Scheme canonica.
-	 *
-	 * @param nodo - Nodo lambda.
-	 * @returns La stringa formattata.
-	 */
 	visitaLambda(nodo: LambdaAST): string {
 		const parametri = nodo.parametri.map((p) => p.accetta(this)).join(' ');
 		const corpo = nodo.corpo.map((expr) => expr.accetta(this)).join(' ');
 		return `(lambda (${parametri}) ${corpo})`;
 	}
 
-	/**
-	 * Formatta una applicazione di funzione.
-	 *
-	 * @param nodo - Nodo applicazione.
-	 * @returns La stringa formattata.
-	 */
 	visitaApplicazione(nodo: ApplicazioneAST): string {
 		const operatore = nodo.operatore.accetta(this);
 		const argomenti = nodo.argomenti.map((arg) => arg.accetta(this)).join(' ');
 		return `(${operatore}${argomenti ? ` ${argomenti}` : ''})`;
 	}
 
-	/**
-	 * Formatta una condizione if con una rappresentazione multilinea quando necessario.
-	 *
-	 * @param nodo - Nodo if.
-	 * @returns La stringa formattata.
-	 */
 	visitaIf(nodo: IfAST): string {
 		const cond = nodo.condizione.accetta(this);
 
@@ -225,34 +232,16 @@ export class FormatterScheme implements VisitorAST<string> {
 		return `(if ${cond}\n${this.getIndent()}  ${thenStr}\n${this.getIndent()}  ${elseStr})`;
 	}
 
-	/**
-	 * Formatta una forma and.
-	 *
-	 * @param nodo - Nodo and.
-	 * @returns La stringa formattata.
-	 */
 	visitaAnd(nodo: AndAST): string {
 		const exprs = nodo.espressioni.map((e) => e.accetta(this)).join(' ');
 		return `(and ${exprs})`;
 	}
 
-	/**
-	 * Formatta una forma or.
-	 *
-	 * @param nodo - Nodo or.
-	 * @returns La stringa formattata.
-	 */
 	visitaOr(nodo: OrAST): string {
 		const exprs = nodo.espressioni.map((e) => e.accetta(this)).join(' ');
 		return `(or ${exprs})`;
 	}
 
-	/**
-	 * Formatta una forma cond con le relative clausole.
-	 *
-	 * @param nodo - Nodo cond.
-	 * @returns La stringa formattata.
-	 */
 	visitaCond(nodo: CondAST): string {
 		this.indentLevel++;
 		const clausoleStr = nodo.clausole

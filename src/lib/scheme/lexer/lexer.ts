@@ -1,9 +1,44 @@
+// file: src/lib/scheme/lexer/lexer.ts
+/**
+ * Modulo per l'analisi lessicale (lexer) del sorgente Scheme.
+ *
+ * Converte una stringa di codice sorgente in una sequenza di token (`Parola[]`).
+ * Gestisce la rimozione degli spazi bianchi, dei commenti (introdotti da `;`),
+ * e riconosce delimitatori, stringhe, booleani, numeri e simboli.
+ *
+ * @module lexer/lexer
+ * @example
+ * ```typescript
+ * import { analizzatoreLessicale } from './lexer';
+ *
+ * const sorgente = '(define x 42) ; commento';
+ * const tokens = analizzatoreLessicale(sorgente);
+ * // Produce una lista di token (LPAREN, SYMBOL "define", SYMBOL "x", NUMBER 42, RPAREN, EOF)
+ * ```
+ */
+
 import { TipoDiParole } from './token';
 import type { Parola } from './token';
 
 export { TipoDiParole } from './token';
 export type { Parola } from './token';
 
+/**
+ * Esegue l'analisi lessicale di una stringa contenente codice sorgente Scheme.
+ *
+ * Scansiona il testo carattere per carattere, ignorando spazi bianchi e commenti
+ * di riga (introdotti da `;`), e restituisce un array di token terminato da un token di tipo `FineDelFile`.
+ *
+ * @param sorgente - Il codice sorgente Scheme da analizzare.
+ * @returns Array di oggetti {@link Parola} che rappresentano la sequenza dei token.
+ *
+ * @example
+ * ```typescript
+ * const tokens = analizzatoreLessicale('(+ 1 2)');
+ * console.log(tokens[1]); // { tipo: TipoDiParole.Simbolo, valore: '+' }
+ * console.log(tokens[2]); // { tipo: TipoDiParole.Numero, valore: 1 }
+ * ```
+ */
 export function analizzatoreLessicale(sorgente: string): Parola[] {
 	const parole: Parola[] = [];
 	let i = 0;

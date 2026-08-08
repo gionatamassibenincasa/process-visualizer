@@ -102,4 +102,39 @@ describe('Integrazione parser-stepper', () => {
 		expect(passi[passi.length - 1].èTerminato).toBe(true);
 		expect(outputFinale).toContain('120');
 	});
+
+	describe('Gestione simboli non definiti', () => {
+		test('solleva errore per un programma contenente un solo simbolo non definito', () => {
+			const stepper = StepperScheme.daSorgente('pippo');
+			expect(() => stepper.passiDaSorgente('pippo')).toThrow(
+				"Errore di Runtime: Simbolo 'pippo' non definito nello scope."
+			);
+		});
+
+		test('solleva errore per simbolo non definito in posizione operatore', () => {
+			const stepper = StepperScheme.daSorgente('(pippo 1 2)');
+			expect(() => stepper.passiDaSorgente('(pippo 1 2)')).toThrow(
+				"Errore di Runtime: Simbolo 'pippo' non definito nello scope."
+			);
+		});
+
+		test('solleva errore per simbolo non definito come argomento di funzione', () => {
+			const stepper = StepperScheme.daSorgente('(+ 1 pippo)');
+			expect(() => stepper.passiDaSorgente('(+ 1 pippo)')).toThrow(
+				"Errore di Runtime: Simbolo 'pippo' non definito nello scope."
+			);
+		});
+
+		test('solleva errore per simbolo non definito in un corpo di funzione al momento della chiamata', () => {
+			const sorgente = `
+				(define f (lambda (x) (f y)))
+				(f 1)
+			`;
+			const stepper = StepperScheme.daSorgente(sorgente);
+			expect(() => stepper.passiDaSorgente(sorgente)).toThrow(
+				"Errore di Runtime: Simbolo 'y' non definito nello scope."
+			);
+		});
+	});
 });
+

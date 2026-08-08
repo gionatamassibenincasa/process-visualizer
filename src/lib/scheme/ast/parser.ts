@@ -1,3 +1,23 @@
+// file: src/lib/scheme/ast/parser.ts
+/**
+ * Modulo di analisi sintattica (Parser) per il linguaggio Scheme.
+ *
+ * Implementa un parser a discesa ricorsiva (recursive descent) che consuma la sequenza
+ * di token prodotta da `analizzatoreLessicale` e genera la struttura ad albero `ProgrammaAST`.
+ *
+ * Supporta atomi, citazioni (quote), applicazioni di funzione e le forme speciali:
+ * `define`, `lambda`, `if`, `and`, `or`, `cond`.
+ *
+ * @module ast/parser
+ * @example
+ * ```typescript
+ * import { parseProgrammaDaSorgente } from './parser';
+ *
+ * const ast = parseProgrammaDaSorgente('(define x 10) (+ x 5)');
+ * console.log(ast.forme.length); // 2
+ * ```
+ */
+
 import { analizzatoreLessicale, type Parola, TipoDiParole } from '../lexer/lexer';
 import { Atomo, TipoAtomo } from './atomo';
 import { Coppia } from './coppia';
@@ -20,25 +40,39 @@ import type { ClausolaCond } from './ast';
 type DatumValue = Atomo | Lista | Coppia;
 
 /**
- * Parser ricorsivo-discendente per il sottoinsieme Scheme definito in grammar.md.
+ * Analizzatore sintattico ricorsivo per il sottoinsieme Scheme supportato.
+ *
+ * Trasforma l'elenco dei token in istanze concrete delle classi `NodoAST`.
+ *
+ * @example
+ * ```typescript
+ * const tokens = analizzatoreLessicale('(+ 1 2)');
+ * const parser = new ParserScheme(tokens);
+ * const programmaAST = parser.parseProgramma();
+ * ```
  */
 export class ParserScheme {
 	private readonly tokens: Parola[];
 	private current: number = 0;
 
 	/**
-	 * Crea un parser a partire dalla lista di token lessicali.
+	 * Inizializza il parser con la sequenza di token generati dal lexer.
 	 *
-	 * @param tokens - Token prodotti dal lexer.
+	 * @param tokens - Array di token da analizzare.
 	 */
 	constructor(tokens: Parola[]) {
 		this.tokens = tokens;
 	}
 
 	/**
-	 * Esegue il parsing del programma completo.
+	 * Esegue il parsing dell'intero programma Scheme.
 	 *
-	 * @returns Nodo Programma contenente tutte le forme top-level.
+	 * @returns Nodo `ProgrammaAST` contenente tutte le forme top-level scansionate.
+	 * @throws SyntaxError Se la sintassi del codice sorgente non è valida.
+	 * @example
+	 * ```typescript
+	 * const prog = new ParserScheme(tokens).parseProgramma();
+	 * ```
 	 */
 	parseProgramma(): ProgrammaAST {
 		const forme: NodoAST[] = [];
@@ -369,10 +403,15 @@ export class ParserScheme {
 }
 
 /**
- * Esegue il parsing a partire dal codice sorgente Scheme.
+ * Utility di alto livello per il parsing diretto da una stringa sorgente Scheme a un `ProgrammaAST`.
  *
- * @param sorgente - Sorgente da analizzare.
- * @returns Programma AST completo.
+ * @param sorgente - Codice sorgente Scheme.
+ * @returns L'albero `ProgrammaAST` generato.
+ * @throws SyntaxError Se la sintassi contiene errori.
+ * @example
+ * ```typescript
+ * const programma = parseProgrammaDaSorgente('(define x 10) (+ x 2)');
+ * ```
  */
 export function parseProgrammaDaSorgente(sorgente: string): ProgrammaAST {
 	const tokens = analizzatoreLessicale(sorgente);

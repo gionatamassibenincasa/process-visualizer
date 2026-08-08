@@ -1,0 +1,35 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug SvelteKit (Bun Dev)",
+			"runtimeExecutable": "bun",
+			"runtimeArgs": ["run", "--inspect-brk", "dev"],
+			"port": 6499,
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"autoAttachChildProcesses": true
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Debug Client Browser (Chrome)",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}",
+			"sourceMaps": true
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Debug Stepper CLI",
+			"runtimeExecutable": "bun",
+			"args": [
+				"${workspaceFolder}/src/lib/scheme/cli/stepper-cli.ts",
+				"src/lib/scheme/examples/gdn-addizione.scm"
+			],
+			"console": "integratedTerminal"
+		}
+	]
+}

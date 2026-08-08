@@ -1,4 +1,17 @@
-// file: cli/stepper-cli.ts
+// file: src/lib/scheme/cli/stepper-cli.ts
+/**
+ * Interfaccia a Riga di Comando (CLI) per lo Stepper Scheme.
+ *
+ * Consente di eseguire programmi Scheme da file in modalità batch o interattiva,
+ * stampando la traccia delle riduzioni in formato testo o JSON.
+ *
+ * @module cli/stepper-cli
+ * @example
+ * ```bash
+ * bun run src/lib/scheme/cli/stepper-cli.ts programma.scm --ambiente standard --json
+ * ```
+ */
+
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +26,9 @@ import type { PassoStepping } from '../runtime/stepper';
 
 type OutputFormat = 'text' | 'json';
 
+/**
+ * Opzioni di configurazione parsate dagli argomenti della riga di comando.
+ */
 export interface CLIOptions {
 	ambiente: Ambiente<ValoreScheme> | undefined;
 	filePath: string;

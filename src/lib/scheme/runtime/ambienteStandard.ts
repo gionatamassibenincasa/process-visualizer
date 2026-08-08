@@ -1,4 +1,21 @@
-// file: runtime/ambienteStandard.ts
+// file: src/lib/scheme/runtime/ambienteStandard.ts
+/**
+ * Modulo dell'Ambiente Standard per l'interprete Scheme.
+ *
+ * Configura l'ambiente di default popolandolo con tutte le primitive aritmetiche,
+ * di confronto, predicati e manipolazione di liste (con supporto per la doppia terminologia
+ * italiana e Scheme/Lisp standard: `primo`/`car`, `resto`/`cdr`, `anteponi`/`cons`, `successore`/`add1`/`s`, ecc.).
+ *
+ * @module runtime/ambienteStandard
+ * @example
+ * ```typescript
+ * import { creaAmbiente, profiloStandard } from './ambienteStandard';
+ *
+ * const env = creaAmbiente();
+ * console.log(env.applica('+')); // FunzionePrimitiva addizione
+ * ```
+ */
+
 import { Ambiente } from './ambiente';
 import type { FunzionePrimitiva, ListaScheme, ValoreScheme } from './valori';
 import type { ProfiloAmbiente } from './profiloAmbiente';
@@ -65,6 +82,15 @@ function predecessore(valore: ValoreScheme): number {
 	return richiediNumero(valore, 'predecessore') - 1;
 }
 
+/**
+ * Crea e restituisce un nuovo `Ambiente` popolato con l'insieme completo delle primitive dello Standard Scheme.
+ *
+ * @returns Istanza di {@link Ambiente} pronta all'uso.
+ * @example
+ * ```typescript
+ * const env = creaAmbiente();
+ * ```
+ */
 export function creaAmbiente(): Ambiente<ValoreScheme> {
 	const env = new Ambiente<ValoreScheme>();
 
@@ -144,6 +170,9 @@ export function creaAmbiente(): Ambiente<ValoreScheme> {
 	return env;
 }
 
+/**
+ * Profilo di ambiente per l'Ambiente Standard Scheme (`"standard"`).
+ */
 export const profiloStandard: ProfiloAmbiente = {
 	id: 'standard',
 	nome: 'Standard',

@@ -1,3 +1,21 @@
+// file: src/lib/scheme/ast/coppia.ts
+/**
+ * Modulo per la rappresentazione e gestione delle coppie (dotted pair) in Scheme.
+ *
+ * Una coppia è la struttura dati binaria fondamentale di Scheme (cons cell),
+ * composta da due elementi denominati `primo` (car) e `resto` (cdr).
+ *
+ * @module ast/coppia
+ * @example
+ * ```typescript
+ * import { Coppia } from './coppia';
+ * import { Atomo, TipoAtomo } from './atomo';
+ *
+ * const c = new Coppia(new Atomo(1, TipoAtomo.NUMERO), new Atomo(2, TipoAtomo.NUMERO));
+ * console.log(c.toString()); // "(1 . 2)"
+ * ```
+ */
+
 import { Atomo, TipoAtomo } from './atomo';
 import { TipoDiParole } from '../lexer/token';
 import type { Parola } from '../lexer/token';
@@ -5,26 +23,33 @@ import { analizzatoreLessicale } from '../lexer/lexer';
 import type { Lista } from './lista';
 
 /**
- * Definisce il tipo di elemento che può comparire in una coppia Scheme.
- *
- * Un elemento può essere un atomo, un'altra coppia (struttura annidata) oppure nullo.
+ * Definisce il tipo di elemento che può comparire all'interno di una coppia Scheme.
+ * Può essere un `Atomo`, un'altra `Coppia`, una `Lista` o `null` (lista vuota).
  */
 export type TipoElemento = Atomo | Coppia | Lista | null;
 
 /**
- * Rappresenta una coppia Scheme (dotted pair) composta da primo elemento e resto.
+ * Rappresenta una coppia Scheme (dotted pair `(primo . resto)`).
  *
- * La classe supporta sia la serializzazione in formato Scheme sia il parsing da stringa.
+ * Incapsula il primo elemento (car) e il secondo elemento / resto (cdr) della coppia.
+ * Fornisce metodi per la serializzazione `toString` e per il parsing da stringa `Coppia.fromString`.
+ *
+ * @example
+ * ```typescript
+ * const coppia = Coppia.fromString('(1 . 2)');
+ * console.log(coppia.primo.valore); // 1
+ * console.log(coppia.resto.valore); // 2
+ * ```
  */
 export class Coppia {
 	private readonly _primo: TipoElemento;
 	private readonly _resto: TipoElemento;
 
 	/**
-	 * Crea una nuova coppia.
+	 * Crea una nuova coppia Scheme.
 	 *
-	 * @param primo - Primo elemento della coppia.
-	 * @param resto - Elemento restante della coppia.
+	 * @param primo - Primo elemento della coppia (car).
+	 * @param resto - Secondo elemento o coda della coppia (cdr).
 	 */
 	constructor(primo: TipoElemento, resto: TipoElemento) {
 		this._primo = primo;
@@ -32,41 +57,45 @@ export class Coppia {
 	}
 
 	/**
-	 * Restituisce il primo elemento della coppia.
+	 * Restituisce il primo elemento della coppia (car).
 	 */
 	get primo(): TipoElemento {
 		return this._primo;
 	}
 
 	/**
-	 * Restituisce il resto della coppia.
+	 * Restituisce il resto della coppia (cdr).
 	 */
 	get resto(): TipoElemento {
 		return this._resto;
 	}
 
 	/**
-	 * Verifica se un valore è un'istanza valida di Coppia.
+	 * Type guard per verificare se un valore generico è un'istanza di `Coppia`.
 	 *
 	 * @param a - Valore da verificare.
-	 * @returns True se il valore è una coppia.
+	 * @returns `true` se il valore è un'istanza di `Coppia`.
+	 * @example
+	 * ```typescript
+	 * Coppia.èCoppia(new Coppia(null, null)); // true
+	 * Coppia.èCoppia(42); // false
+	 * ```
 	 */
 	static èCoppia(a: unknown): a is Coppia {
 		return a instanceof Coppia;
 	}
 
 	/**
-	 * Restituisce la rappresentazione testuale della coppia nel formato dotted pair.
+	 * Restituisce la rappresentazione testuale della coppia nel formato dotted pair Scheme `(a . b)`.
 	 *
-	 * @returns Stringa in formato Scheme, ad esempio (a . b).
+	 * @returns La stringa formattata.
+	 * @example
+	 * ```typescript
+	 * const c = new Coppia(Atomo.fromString('a'), Atomo.fromString('b'));
+	 * c.toString(); // "(a . b)"
+	 * ```
 	 */
 	toString(): string {
-		/**
-		 * Converte un singolo elemento della coppia in formato testuale Scheme.
-		 *
-		 * @param el - Elemento da formattare.
-		 * @returns Rappresentazione testuale dell'elemento.
-		 */
 		function formatElemento(el: TipoElemento): string {
 			if (el === null) {
 				return '()';
@@ -81,17 +110,19 @@ export class Coppia {
 
 		const valPrimo = formatElemento(this._primo);
 		const valResto = formatElemento(this._resto);
-		// if (this._resto === null) {
-		//     return `(${valPrimo})`;
-		// }
 		return `(${valPrimo} . ${valResto})`;
 	}
 
 	/**
-	 * Crea una coppia a partire da una stringa in sintassi Scheme.
+	 * Costruisce una `Coppia` effettuando l'analisi lessicale e il parsing di una stringa Scheme.
 	 *
-	 * @param s - Stringa da interpretare.
-	 * @returns Coppia corrispondente all'input.
+	 * @param s - Stringa in formato coppia Scheme (es. `"(1 . 2)"` o `"(a . (b . c))"`).
+	 * @returns Istanza di `Coppia` corrispondente.
+	 * @throws Error Se la stringa non è una sintassi di coppia valida.
+	 * @example
+	 * ```typescript
+	 * const c = Coppia.fromString('(x . y)');
+	 * ```
 	 */
 	static fromString(s: string): Coppia {
 		const parole = analizzatoreLessicale(s).filter(
@@ -110,11 +141,7 @@ export class Coppia {
 	}
 
 	/**
-	 * Effettua il parsing ricorsivo dei token e costruisce la struttura annidata di coppie.
-	 *
-	 * @param parole - Sequenza di token lessicali.
-	 * @param pos - Posizione corrente nel parsing.
-	 * @returns Coppia costruita dai token letti.
+	 * Helper privato per il parsing ricorsivo dei token e la costruzione della coppia.
 	 */
 	private static _parseTokens(parole: Parola[], pos: { index: number }): Coppia {
 		function tokenToElemento(token: Parola): TipoElemento {
@@ -132,7 +159,6 @@ export class Coppia {
 			}
 		}
 
-		// Legge il primo elemento
 		if (pos.index >= parole.length) {
 			throw new Error('Coppia non valida: fine inattesa dei token.');
 		}
@@ -147,12 +173,10 @@ export class Coppia {
 			pPrimo = tokenToElemento(token1);
 		}
 
-		// Ci aspettiamo il punto '.' che separa il primo dal resto in una dotted pair
 		if (pos.index < parole.length && parole[pos.index].valore === '.') {
-			pos.index++; // Salta il punto
+			pos.index++;
 		}
 
-		// Legge il resto
 		if (pos.index >= parole.length) {
 			throw new Error('Coppia non valida: manca il resto dopo il separatore.');
 		}
@@ -167,7 +191,6 @@ export class Coppia {
 			pResto = tokenToElemento(token2);
 		}
 
-		// Ci aspettiamo la chiusura della parentesi ')'
 		if (pos.index < parole.length && parole[pos.index].tipo === TipoDiParole.ParentesiChiusa) {
 			pos.index++;
 		} else {

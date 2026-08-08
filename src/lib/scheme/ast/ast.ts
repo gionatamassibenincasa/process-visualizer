@@ -1,11 +1,40 @@
+// file: src/lib/scheme/ast/ast.ts
+/**
+ * Modulo di definizione dell'Abstract Syntax Tree (AST) per il linguaggio Scheme.
+ *
+ * Contiene la gerarchia di classi astratte e concrete usate per rappresentare
+ * le espressioni del linguaggio (atomi, citazioni, liste e forme speciali come `define`, `if`, `lambda`).
+ * Implementa il pattern Visitor attraverso l'interfaccia `VisitorAST`.
+ *
+ * @module ast/ast
+ * @example
+ * ```typescript
+ * import { ProgrammaAST, ApplicazioneAST, AtomoAST } from './ast';
+ *
+ * const app = new ApplicazioneAST(new AtomoAST('+'), [new AtomoAST(1), new AtomoAST(2)]);
+ * const prog = new ProgrammaAST([app]);
+ * ```
+ */
+
 import { Lista } from './lista';
 import { Coppia } from './coppia';
 import { Atomo } from './atomo';
 
 /**
- * Definisce i nodi dell'Abstract Syntax Tree (AST) usati per rappresentare programmi Scheme.
+ * Interfaccia per il pattern Visitor sugli elementi dell'AST Scheme.
  *
- * Le classi astratte e concrete descrivono espressioni atomiche, liste e forme speciali.
+ * Consente di implementare operazioni generiche (come la formattazione, la valutazione o la trasformazione)
+ * senza accoppiare la logica alle singole classi AST.
+ *
+ * @typeParam R - Tipo restituito dai metodi del visitatore.
+ * @example
+ * ```typescript
+ * class StampanteAST implements VisitorAST<string> {
+ *   visitaProgramma(nodo: ProgrammaAST) { return nodo.forme.map(f => f.accetta(this)).join('\n'); }
+ *   visitaAtomo(nodo: AtomoAST) { return String(nodo.valore); }
+ *   // ... altri metodi
+ * }
+ * ```
  */
 export interface VisitorAST<R> {
 	visitaProgramma(nodo: ProgrammaAST): R;
@@ -22,9 +51,15 @@ export interface VisitorAST<R> {
 }
 
 /**
- * Nodo base dell'AST: ogni espressione Scheme implementa questo contratto.
+ * Nodo base astratto dell'AST: ogni espressione Scheme eredita da questa classe.
  */
 export abstract class NodoAST {
+	/**
+	 * Accetta un visitatore e delega l'elaborazione al metodo specifico della sottoclasse.
+	 *
+	 * @param visitor - Il visitatore che processa il nodo.
+	 * @returns Il risultato dell'elaborazione.
+	 */
 	abstract accetta<R>(visitor: VisitorAST<R>): R;
 }
 
@@ -32,7 +67,15 @@ export abstract class NodoAST {
 // 0. PROGRAMMA
 // ==========================================
 /**
- * Rappresenta un programma Scheme, ovvero una sequenza ordinata di forme.
+ * Rappresenta un programma Scheme, composto da una sequenza ordinata di forme top-level.
+ *
+ * @example
+ * ```typescript
+ * const programma = new ProgrammaAST([
+ *   new DefineAST(new AtomoAST('x'), new AtomoAST(10)),
+ *   new ApplicazioneAST(new AtomoAST('+'), [new AtomoAST('x'), new AtomoAST(5)])
+ * ]);
+ * ```
  */
 export class ProgrammaAST extends NodoAST {
 	/**
@@ -44,12 +87,6 @@ export class ProgrammaAST extends NodoAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaProgramma(this);
 	}
@@ -59,7 +96,14 @@ export class ProgrammaAST extends NodoAST {
 // 1. ATOMO
 // ==========================================
 /**
- * Rappresenta un valore atomico, come un numero, un booleano o un simbolo.
+ * Rappresenta un valore atomico, come un numero, un booleano, una stringa o un simbolo.
+ *
+ * @example
+ * ```typescript
+ * const atomoNum = new AtomoAST(42);
+ * const atomoSimbolo = new AtomoAST('pippo');
+ * const atomoBool = new AtomoAST(true);
+ * ```
  */
 export class AtomoAST extends NodoAST {
 	/**
@@ -71,12 +115,6 @@ export class AtomoAST extends NodoAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaAtomo(this);
 	}
@@ -86,24 +124,23 @@ export class AtomoAST extends NodoAST {
 // 2. CITAZIONE (Quote: 'expr o (quote expr))
 // ==========================================
 /**
- * Rappresenta una citazione, ovvero un'espressione che deve essere trattata come dati.
+ * Rappresenta una citazione (quote), ovvero un'espressione trattata come dato letterale.
+ *
+ * @example
+ * ```typescript
+ * const quote = new CitazioneAST(new AtomoAST('simbolo'));
+ * ```
  */
 export class CitazioneAST extends NodoAST {
 	/**
 	 * Crea una nuova citazione.
 	 *
-	 * @param espressione - Espressione che viene citata.
+	 * @param espressione - Espressione o struttura dati citata.
 	 */
 	constructor(public espressione: NodoAST | Atomo | Lista | Coppia) {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaCitazione(this);
 	}
@@ -113,7 +150,12 @@ export class CitazioneAST extends NodoAST {
 // 3. LISTA (Applicazione di funzione o lista generica)
 // ==========================================
 /**
- * Rappresenta una lista di espressioni, ad esempio un'applicazione o una struttura dati.
+ * Rappresenta una lista di espressioni nell'AST.
+ *
+ * @example
+ * ```typescript
+ * const lista = new ListaAST([new AtomoAST(1), new AtomoAST(2)]);
+ * ```
  */
 export class ListaAST extends NodoAST {
 	/**
@@ -125,12 +167,6 @@ export class ListaAST extends NodoAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaLista(this);
 	}
@@ -140,20 +176,26 @@ export class ListaAST extends NodoAST {
 // 4. FORME SPECIALI (Classe astratta e concrete)
 // ==========================================
 /**
- * Base comune per tutte le forme speciali di Scheme.
+ * Base comune astratta per le forme speciali di Scheme (`define`, `if`, `lambda`, `cond`, ecc.).
  */
 export abstract class FormaSpecialeAST extends NodoAST {}
 
 // --- DEFINE ---
 /**
- * Rappresenta una definizione di variabile o funzione.
+ * Rappresenta la forma speciale `define` per la definizione di variabili o funzioni.
+ *
+ * @example
+ * ```typescript
+ * // (define x 10)
+ * const def = new DefineAST(new AtomoAST('x'), new AtomoAST(10));
+ * ```
  */
 export class DefineAST extends FormaSpecialeAST {
 	/**
 	 * Crea una nuova definizione.
 	 *
-	 * @param nome - Nome della variabile o della funzione.
-	 * @param valore - Espressione assegnata al nome.
+	 * @param nome - Nome del simbolo definito.
+	 * @param valore - Espressione associata al nome.
 	 */
 	constructor(
 		public nome: AtomoAST,
@@ -162,12 +204,6 @@ export class DefineAST extends FormaSpecialeAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaDefine(this);
 	}
@@ -176,13 +212,22 @@ export class DefineAST extends FormaSpecialeAST {
 // --- LAMBDA ---
 /**
  * Rappresenta una funzione anonima Scheme con parametri e corpo.
+ *
+ * @example
+ * ```typescript
+ * // (lambda (x y) (+ x y))
+ * const lambda = new LambdaAST(
+ *   [new AtomoAST('x'), new AtomoAST('y')],
+ *   [new ApplicazioneAST(new AtomoAST('+'), [new AtomoAST('x'), new AtomoAST('y')])]
+ * );
+ * ```
  */
 export class LambdaAST extends FormaSpecialeAST {
 	/**
 	 * Crea un nuovo nodo lambda.
 	 *
 	 * @param parametri - Parametri formali della funzione.
-	 * @param corpo - Sequenza di forme che costituiscono il corpo.
+	 * @param corpo - Sequenza di espressioni nel corpo della lambda.
 	 */
 	constructor(
 		public parametri: AtomoAST[],
@@ -191,12 +236,6 @@ export class LambdaAST extends FormaSpecialeAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaLambda(this);
 	}
@@ -204,14 +243,20 @@ export class LambdaAST extends FormaSpecialeAST {
 
 // --- APPLICAZIONE ---
 /**
- * Rappresenta un'applicazione di funzione: operatore seguito da argomenti.
+ * Rappresenta un'applicazione di funzione (operatore applicato agli argomenti).
+ *
+ * @example
+ * ```typescript
+ * // (+ 10 20)
+ * const app = new ApplicazioneAST(new AtomoAST('+'), [new AtomoAST(10), new AtomoAST(20)]);
+ * ```
  */
 export class ApplicazioneAST extends NodoAST {
 	/**
 	 * Crea una nuova applicazione.
 	 *
-	 * @param operatore - Nodo che rappresenta la funzione da applicare.
-	 * @param argomenti - Argomenti passati all'operatore.
+	 * @param operatore - Nodo che rappresenta l'operatore da valutare ed eseguire.
+	 * @param argomenti - Elenco delle espressioni usate come argomenti.
 	 */
 	constructor(
 		public operatore: NodoAST,
@@ -220,12 +265,6 @@ export class ApplicazioneAST extends NodoAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaApplicazione(this);
 	}
@@ -233,15 +272,25 @@ export class ApplicazioneAST extends NodoAST {
 
 // --- IF ---
 /**
- * Rappresenta una forma condizionale if.
+ * Rappresenta la forma condizionale `if`.
+ *
+ * @example
+ * ```typescript
+ * // (if (> x 0) 1 -1)
+ * const ifNodo = new IfAST(
+ *   new ApplicazioneAST(new AtomoAST('>'), [new AtomoAST('x'), new AtomoAST(0)]),
+ *   new AtomoAST(1),
+ *   new AtomoAST(-1)
+ * );
+ * ```
  */
 export class IfAST extends FormaSpecialeAST {
 	/**
 	 * Crea un nuovo nodo if.
 	 *
-	 * @param condizione - Esprssione booleana di controllo.
-	 * @param ramoThen - Ramificazione eseguita se la condizione è vera.
-	 * @param ramoElse - Ramificazione eseguita se la condizione è falsa.
+	 * @param condizione - Espressione condizionale di controllo.
+	 * @param ramoThen - Espressione eseguita se la condizione è vera.
+	 * @param ramoElse - Espressione eseguita se la condizione è falsa.
 	 */
 	constructor(
 		public condizione: NodoAST,
@@ -251,12 +300,6 @@ export class IfAST extends FormaSpecialeAST {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaIf(this);
 	}
@@ -264,24 +307,24 @@ export class IfAST extends FormaSpecialeAST {
 
 // --- AND ---
 /**
- * Rappresenta una forma logica and.
+ * Rappresenta la forma logica con valutazione in cortocircuito `and`.
+ *
+ * @example
+ * ```typescript
+ * // (and #t #f)
+ * const andNodo = new AndAST([new AtomoAST(true), new AtomoAST(false)]);
+ * ```
  */
 export class AndAST extends FormaSpecialeAST {
 	/**
 	 * Crea un nuovo nodo and.
 	 *
-	 * @param espressioni - Elenco delle espressioni valutate in sequenza.
+	 * @param espressioni - Sequenza di espressioni da valutare in ordine.
 	 */
 	constructor(public espressioni: NodoAST[]) {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaAnd(this);
 	}
@@ -289,24 +332,24 @@ export class AndAST extends FormaSpecialeAST {
 
 // --- OR ---
 /**
- * Rappresenta una forma logica or.
+ * Rappresenta la forma logica con valutazione in cortocircuito `or`.
+ *
+ * @example
+ * ```typescript
+ * // (or #f #t)
+ * const orNodo = new OrAST([new AtomoAST(false), new AtomoAST(true)]);
+ * ```
  */
 export class OrAST extends FormaSpecialeAST {
 	/**
 	 * Crea un nuovo nodo or.
 	 *
-	 * @param espressioni - Elenco delle espressioni valutate in sequenza.
+	 * @param espressioni - Sequenza di espressioni da valutare in ordine.
 	 */
 	constructor(public espressioni: NodoAST[]) {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaOr(this);
 	}
@@ -314,32 +357,37 @@ export class OrAST extends FormaSpecialeAST {
 
 // --- COND ---
 /**
- * Descrive una singola clausola di una forma cond.
+ * Descrive una singola clausola contenuta in una forma condizionale `cond`.
  */
 export interface ClausolaCond {
+	/** Espressione condizionale della clausola. */
 	condizione: NodoAST;
+	/** Sequenza dei conseguenti da eseguire se la condizione è vera. */
 	conseguenti: NodoAST[];
 }
 
 /**
- * Rappresenta una forma cond con una lista di clausole.
+ * Rappresenta la forma speciale condizionale a più ramificazioni `cond`.
+ *
+ * @example
+ * ```typescript
+ * // (cond ((zero? x) 0) (else 1))
+ * const condNodo = new CondAST([
+ *   { condizione: new ApplicazioneAST(new AtomoAST('zero?'), [new AtomoAST('x')]), conseguenti: [new AtomoAST(0)] },
+ *   { condizione: new AtomoAST('else'), conseguenti: [new AtomoAST(1)] }
+ * ]);
+ * ```
  */
 export class CondAST extends FormaSpecialeAST {
 	/**
 	 * Crea un nuovo nodo cond.
 	 *
-	 * @param clausole - Clausole della forma cond.
+	 * @param clausole - Clausole condizionali ordinatamente valutate.
 	 */
 	constructor(public clausole: ClausolaCond[]) {
 		super();
 	}
 
-	/**
-	 * Accetta un visitatore e delega l'elaborazione al metodo appropriato.
-	 *
-	 * @param visitor - Visitor che processa il nodo.
-	 * @returns Il risultato dell'elaborazione.
-	 */
 	accetta<R>(visitor: VisitorAST<R>): R {
 		return visitor.visitaCond(this);
 	}

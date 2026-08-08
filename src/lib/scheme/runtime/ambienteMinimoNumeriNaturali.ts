@@ -1,4 +1,20 @@
-// file: runtime/ambienteMinimoNumeriNaturali.ts
+// file: src/lib/scheme/runtime/ambienteMinimoNumeriNaturali.ts
+/**
+ * Modulo dell'Ambiente Minimo per i Numeri Naturali per l'interprete Scheme.
+ *
+ * Espone un ambiente essenziale dedicato all'aritmetica sui numeri naturali Peano,
+ * fornendo esclusivamente i predicati e le primitive minimali: `zero?`, `s` (successore) e `p` (predecessore).
+ *
+ * @module runtime/ambienteMinimoNumeriNaturali
+ * @example
+ * ```typescript
+ * import { creaAmbiente, profiloMinimoNumeriNaturali } from './ambienteMinimoNumeriNaturali';
+ *
+ * const env = creaAmbiente();
+ * console.log(env.applica('zero?')); // FunzionePrimitiva èZero
+ * ```
+ */
+
 import { Ambiente } from './ambiente';
 import type { FunzionePrimitiva, ValoreScheme } from './valori';
 import type { ProfiloAmbiente } from './profiloAmbiente';
@@ -23,6 +39,15 @@ function predecessore(valore: ValoreScheme): number {
 	return richiediNumero(valore, 'predecessore') - 1;
 }
 
+/**
+ * Crea e restituisce un nuovo `Ambiente` contenente solo le primitive minimali dei numeri naturali (`zero?`, `s`, `p`).
+ *
+ * @returns Istanza di {@link Ambiente} configurata per i numeri naturali.
+ * @example
+ * ```typescript
+ * const env = creaAmbiente();
+ * ```
+ */
 export function creaAmbiente(): Ambiente<ValoreScheme> {
 	const env = new Ambiente<ValoreScheme>();
 
@@ -37,6 +62,9 @@ export function creaAmbiente(): Ambiente<ValoreScheme> {
 	return env;
 }
 
+/**
+ * Profilo di ambiente per l'Ambiente Minimo Numeri Naturali (`"minimo-numeri-naturali"`).
+ */
 export const profiloMinimoNumeriNaturali: ProfiloAmbiente = {
 	id: 'minimo-numeri-naturali',
 	nome: 'Numeri naturali',

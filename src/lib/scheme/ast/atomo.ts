@@ -1,17 +1,45 @@
+// file: src/lib/scheme/ast/atomo.ts
 /**
- * Definisce i tipi e la classe utilizzati per rappresentare valori atomici di Scheme.
+ * Modulo per la rappresentazione e gestione dei valori atomici in Scheme.
  *
- * Gli atomi sono i costituenti base dell'AST e vengono usati dal parser e dall'interprete.
+ * Gli atomi rappresentano la struttura dati elementare del linguaggio:
+ * numeri, booleani, stringhe e simboli. Contiene anche l'utility `fromString`
+ * per la deserializzazione dal formato testuale Scheme.
+ *
+ * @module ast/atomo
+ * @example
+ * ```typescript
+ * import { Atomo, TipoAtomo } from './atomo';
+ *
+ * const a = Atomo.fromString('42');
+ * console.log(a.tipo); // TipoAtomo.NUMERO
+ * console.log(a.valore); // 42
+ * console.log(a.toString()); // "42"
+ * ```
+ */
+
+/**
+ * Enumerazione dei tipi semantici degli atomi Scheme.
  */
 export enum TipoAtomo {
+	/** Valore numerico (intero o reale) */
 	NUMERO = 'NUMERO',
+	/** Valore booleano (#t / #f) */
 	BOOLEANO = 'BOOLEANO',
+	/** Stringa di testo letterale */
 	STRINGA = 'STRINGA',
+	/** Identificatore / simbolo Scheme */
 	SIMBOLO = 'SIMBOLO'
 }
 
 /**
- * Rappresenta un valore atomico di Scheme, come numero, booleano, stringa o simbolo.
+ * Rappresenta un valore atomico in Scheme con il suo valore primitivo e il relativo tipo semantico.
+ *
+ * @example
+ * ```typescript
+ * const atomoNum = new Atomo(100, TipoAtomo.NUMERO);
+ * const atomoSym = new Atomo('fattoriale', TipoAtomo.SIMBOLO);
+ * ```
  */
 export class Atomo {
 	private readonly _valore: number | boolean | string;
@@ -20,7 +48,7 @@ export class Atomo {
 	/**
 	 * Crea un nuovo atomo con il valore specificato e il relativo tipo.
 	 *
-	 * @param valore - Valore atomico da incapsulare.
+	 * @param valore - Valore primitivo incapsulato dall'atomo.
 	 * @param tipo - Tipo semantico dell'atomo.
 	 */
 	constructor(valore: number | boolean | string, tipo: TipoAtomo) {
@@ -43,20 +71,30 @@ export class Atomo {
 	}
 
 	/**
-	 * Verifica se un valore è un atomo primitivo supportato.
+	 * Verifica se un generico valore JavaScript è un tipo atomico supportato (number, boolean o string).
 	 *
 	 * @param a - Valore da verificare.
-	 * @returns True se il valore è un numero, un booleano o una stringa.
+	 * @returns `true` se il valore è un numero, un booleano o una stringa.
+	 * @example
+	 * ```typescript
+	 * Atomo.èValoreAtomico(42); // true
+	 * Atomo.èValoreAtomico({}); // false
+	 * ```
 	 */
 	static èValoreAtomico(a: unknown): a is number | boolean | string {
 		return typeof a === 'string' || typeof a === 'number' || typeof a === 'boolean';
 	}
 
 	/**
-	 * Crea un atomo a partire da una stringa in formato Scheme o testo grezzo.
+	 * Parsing helper per istanziare un `Atomo` a partire dalla sua rappresentazione testuale Scheme.
 	 *
-	 * @param s - Stringa da interpretare.
-	 * @returns Un atomo corrispondente al valore riconosciuto.
+	 * @param s - Stringa da interpretare (es. `"#t"`, `"42"`, `"\"testo\""`, `"simbolo"`).
+	 * @returns Oggetto `Atomo` con tipo e valore inferiti.
+	 * @example
+	 * ```typescript
+	 * const boolAtom = Atomo.fromString('#t'); // TipoAtomo.BOOLEANO, valore: true
+	 * const strAtom = Atomo.fromString('"ciao"'); // TipoAtomo.STRINGA, valore: "ciao"
+	 * ```
 	 */
 	static fromString(s: string): Atomo {
 		const sTrimmed = s.trim();
@@ -92,9 +130,14 @@ export class Atomo {
 	}
 
 	/**
-	 * Restituisce una rappresentazione testuale dell'atomo in formato Scheme.
+	 * Restituisce la rappresentazione testuale dell'atomo nel formato standard Scheme.
 	 *
-	 * @returns La stringa rappresentativa dell'atomo.
+	 * @returns La stringa rappresentativa (es. `"42"`, `"#t"`, `"\"testo\""`).
+	 * @example
+	 * ```typescript
+	 * new Atomo(true, TipoAtomo.BOOLEANO).toString(); // "#t"
+	 * new Atomo("abc", TipoAtomo.STRINGA).toString(); // "\"abc\""
+	 * ```
 	 */
 	toString(): string {
 		switch (this._tipo) {

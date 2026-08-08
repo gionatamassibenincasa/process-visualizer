@@ -1,4 +1,21 @@
-// file: stepper.ts
+// file: src/lib/scheme/runtime/stepper.ts
+/**
+ * Modulo del motore di Stepping (riduzione e valutazione passo-passo) per Scheme.
+ *
+ * Implementa l'interprete a piccoli passi (`StepperScheme`), che valuta ed espande un programma Scheme
+ * nodo per nodo consentendo di tracciare la timeline completa delle riduzioni e dello stato dell'ambiente.
+ *
+ * @module runtime/stepper
+ * @example
+ * ```typescript
+ * import { StepperScheme } from './stepper';
+ *
+ * const stepper = StepperScheme.daSorgente('(define x 10) (+ x 5)');
+ * const passi = stepper.passiDaSorgente('(define x 10) (+ x 5)');
+ * console.log(passi.length);
+ * ```
+ */
+
 import {
 	ApplicazioneAST,
 	AndAST,
@@ -21,19 +38,34 @@ import { Ambiente, type SnapshotAmbiente } from './ambiente';
 import { creaAmbiente } from './registroAmbienti';
 import type { Chiusura, FunzionePrimitiva, ValoreScheme } from './valori';
 
+/**
+ * Rappresenta un singolo passo di riduzione eseguito dallo stepper.
+ */
 export interface PassoStepping {
+	/** L'albero AST prima dell'applicazione della regola di riduzione. */
 	astPrecedente: NodoAST;
+	/** L'albero AST dopo l'applicazione della regola di riduzione. */
 	astSuccessivo: NodoAST;
+	/** Descrizione della regola di riscrittura o valutazione applicata. */
 	regolaApplicata: string;
+	/** `true` se il programma ha raggiunto la sua forma finale irriducibile. */
 	èTerminato: boolean;
+	/** Istantanea dello stato degli ambienti al momento del passo. */
 	ambiente: SnapshotAmbiente;
 }
 
 type PassoInterno = Omit<PassoStepping, 'ambiente'>;
 
 /**
- * Utility per estrarre l'id dell'ambiente dalla prima riga del sorgente:
- * ; ambiente: <id-ambiente>
+ * Estrae l'ID del profilo di ambiente dichiarata nella prima riga del codice sorgente se presente.
+ * Sintassi attesa: `; ambiente: <id-ambiente>`
+ *
+ * @param sorgente - Codice sorgente Scheme.
+ * @returns L'ID dell'ambiente oppure `null` se non specificato.
+ * @example
+ * ```typescript
+ * leggiDichiarazioneAmbiente('; ambiente: minimo-numeri-naturali\n(+ 1 2)'); // 'minimo-numeri-naturali'
+ * ```
  */
 export function leggiDichiarazioneAmbiente(sorgente: string): string | null {
 	const righe = sorgente.split(/\r?\n/);
@@ -46,13 +78,23 @@ export function leggiDichiarazioneAmbiente(sorgente: string): string | null {
 	return match ? match[1] : null;
 }
 
+/**
+ * Motore di riduzione a piccoli passi per valutare e visualizzare programmi Scheme.
+ *
+ * @example
+ * ```typescript
+ * const stepper = StepperScheme.daSorgente('(if #t 1 2)');
+ * const passi = stepper.passiDaSorgente('(if #t 1 2)');
+ * console.log(passi[passi.length - 1].èTerminato); // true
+ * ```
+ */
 export class StepperScheme {
 	private env: Ambiente<ValoreScheme>;
 
 	/**
 	 * Inizializza lo StepperScheme.
-	 * @param envOrId Un'istanza di Ambiente esistente oppure l'ID dell'ambiente da creare.
-	 *                Se non specificato, viene creato l'ambiente di default ("standard").
+	 *
+	 * @param envOrId Istanza di `Ambiente` oppure ID dell'ambiente predefinito (default `"standard"`).
 	 */
 	constructor(envOrId?: Ambiente<ValoreScheme> | string) {
 		if (typeof envOrId === 'string') {
@@ -60,18 +102,20 @@ export class StepperScheme {
 		} else if (envOrId instanceof Ambiente) {
 			this.env = envOrId;
 		} else {
-			// Se undefined o non passato, creaAmbiente() usa il default ('standard')
 			this.env = creaAmbiente();
 		}
 	}
 
 	/**
-	 * Factory Method: Istanzia lo StepperScheme dal codice sorgente.
+	 * Factory Method: Istanzia lo `StepperScheme` dal codice sorgente interpretando eventuali direttive di ambiente.
 	 *
-	 * Priorità dell'ambiente:
-	 * 1. `ambienteOverride` (se passato esplicitamente, ad es. da CLI)
-	 * 2. ID dell'ambiente specificato nella prima riga del file (es: `; ambiente: minimo-numeri-naturali`)
-	 * 3. Ambiente di default ("standard")
+	 * @param sorgente Codice sorgente Scheme.
+	 * @param ambienteOverride Ambiente opzionale esplicito che sovrascrive quello dichiarato nel sorgente.
+	 * @returns Nuova istanza di `StepperScheme`.
+	 * @example
+	 * ```typescript
+	 * const stepper = StepperScheme.daSorgente('; ambiente: standard\n(+ 1 2)');
+	 * ```
 	 */
 	static daSorgente(sorgente: string, ambienteOverride?: Ambiente<ValoreScheme>): StepperScheme {
 		if (ambienteOverride) {
@@ -80,8 +124,6 @@ export class StepperScheme {
 
 		const idDichiarato = leggiDichiarazioneAmbiente(sorgente);
 		if (idDichiarato) {
-			// Passeremo la stringa al costruttore, che invocherà creaAmbiente(idDichiarato)
-			// sollevando AmbienteNonTrovatoError se l'ID è errato.
 			return new StepperScheme(idDichiarato);
 		}
 
@@ -89,11 +131,14 @@ export class StepperScheme {
 	}
 
 	/**
-	 * Ritorna l'ambiente corrente dello stepper.
+	 * Restituisce l'ambiente di esecuzione associato allo stepper.
+	 *
+	 * @returns L'istanza di {@link Ambiente}.
 	 */
 	getAmbiente(): Ambiente<ValoreScheme> {
 		return this.env;
 	}
+
 
 	private èChiusura(valore: ValoreScheme): valore is Chiusura {
 		return (
@@ -114,11 +159,10 @@ export class StepperScheme {
 
 	private atomoInValore(atomo: AtomoAST, env: Ambiente<ValoreScheme>): ValoreScheme {
 		if (typeof atomo.valore === 'string') {
-			try {
-				return env.applica(atomo.valore) as ValoreScheme;
-			} catch {
+			if (atomo.valore.startsWith('#<')) {
 				return atomo.valore;
 			}
+			return env.applica(atomo.valore) as ValoreScheme;
 		}
 
 		if (typeof atomo.valore === 'symbol') {
@@ -430,24 +474,23 @@ export class StepperScheme {
 		// ==========================================
 		if (nodo instanceof AtomoAST) {
 			if (typeof nodo.valore === 'string') {
-				try {
-					const valoreRisolto = env.applica(nodo.valore);
-
-					if (
-						typeof valoreRisolto === 'number' ||
-						typeof valoreRisolto === 'boolean' ||
-						typeof valoreRisolto === 'string'
-					) {
-						return {
-							astPrecedente: nodo,
-							astSuccessivo: new AtomoAST(valoreRisolto),
-							regolaApplicata: `Risoluzione simbolo '${nodo.valore}' -> ${valoreRisolto}`,
-							èTerminato: false
-						};
-					}
-				} catch {
-					// Simbolo non ancora risolvibile.
+				if (nodo.valore.startsWith('#<')) {
+					return {
+						astPrecedente: nodo,
+						astSuccessivo: nodo,
+						regolaApplicata: 'Nessuna ulteriore riduzione (Valore finale raggiunto)',
+						èTerminato: true
+					};
 				}
+
+				const valoreRisolto = env.applica(nodo.valore);
+				const valoreNodo = this.valoreInNodo(valoreRisolto);
+				return {
+					astPrecedente: nodo,
+					astSuccessivo: valoreNodo,
+					regolaApplicata: `Risoluzione simbolo '${nodo.valore}' -> ${this.serializzaValore(valoreRisolto)}`,
+					èTerminato: false
+				};
 			}
 		}
 
@@ -470,7 +513,12 @@ export class StepperScheme {
 				};
 			}
 
-			if (!(nodo.valore instanceof AtomoAST)) {
+			const èSimboloDaRisolvere =
+				nodo.valore instanceof AtomoAST &&
+				typeof nodo.valore.valore === 'string' &&
+				!nodo.valore.valore.startsWith('#<');
+
+			if (!(nodo.valore instanceof AtomoAST) || èSimboloDaRisolvere) {
 				const subPasso = this.passoInterno(nodo.valore, env);
 				return {
 					astPrecedente: nodo,
@@ -595,35 +643,28 @@ export class StepperScheme {
 
 			for (let i = 0; i < argomentiNodi.length; i++) {
 				const arg = argomentiNodi[i];
-				if (arg instanceof AtomoAST && typeof arg.valore === 'string') {
-					try {
-						const valoreRisolto = env.applica(arg.valore);
-						if (
-							typeof valoreRisolto === 'number' ||
-							typeof valoreRisolto === 'boolean' ||
-							typeof valoreRisolto === 'string'
-						) {
-							const nuoviNodiArg = [...argomentiNodi];
-							nuoviNodiArg[i] = new AtomoAST(valoreRisolto);
-							return {
-								astPrecedente: nodo,
-								astSuccessivo: new ApplicazioneAST(operatoreNodo, nuoviNodiArg),
-								regolaApplicata: `Risoluzione argomento '${arg.valore}' -> ${valoreRisolto}`,
-								èTerminato: false
-							};
-						}
-					} catch {
-						// Simbolo non risolvibile ora: si continua.
-					}
+				if (
+					arg instanceof AtomoAST &&
+					typeof arg.valore === 'string' &&
+					!arg.valore.startsWith('#<')
+				) {
+					const valoreRisolto = env.applica(arg.valore);
+					const nuovoNodoArg = this.valoreInNodo(valoreRisolto);
+					const nuoviNodiArg = [...argomentiNodi];
+					nuoviNodiArg[i] = nuovoNodoArg;
+					return {
+						astPrecedente: nodo,
+						astSuccessivo: new ApplicazioneAST(operatoreNodo, nuoviNodiArg),
+						regolaApplicata: `Risoluzione argomento '${arg.valore}' -> ${this.serializzaValore(valoreRisolto)}`,
+						èTerminato: false
+					};
 				}
 			}
 
 			let fn: ValoreScheme = null;
 			if (operatoreNodo instanceof AtomoAST && typeof operatoreNodo.valore === 'string') {
-				try {
+				if (!operatoreNodo.valore.startsWith('#<')) {
 					fn = env.applica(operatoreNodo.valore);
-				} catch {
-					fn = null;
 				}
 			} else if (operatoreNodo instanceof LambdaAST) {
 				fn = this.creaChiusuraDaLambda(operatoreNodo, env);
@@ -639,7 +680,7 @@ export class StepperScheme {
 					return {
 						astPrecedente: nodo,
 						astSuccessivo: this.valoreInNodo(risultato as ValoreScheme),
-						regolaApplicata: `Applicazione della funzione '${operatoreNodo instanceof AtomoAST ? String(operatoreNodo.valore) : 'lambda'}' con argomenti [${argValori.join(', ')}] -> ${String(risultato)}`,
+						regolaApplicata: `Applicazione della funzione '${operatoreNodo instanceof AtomoAST ? String(operatoreNodo.valore) : 'lambda'}' con argomenti [${argValori.map((a) => this.serializzaValore(a)).join(', ')}] -> ${this.serializzaValore(risultato as ValoreScheme)}`,
 						èTerminato: false
 					};
 				}
