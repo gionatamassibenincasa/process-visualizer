@@ -1,5 +1,6 @@
 <!-- file: src/routes/+page.svelte -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import SplitPane from '#lib/components/SplitPane.svelte';
 	import CodeMirror from '#lib/components/CodeMirror.svelte';
 	import StepperView from '#lib/components/SchemeStepperView.svelte';
@@ -116,7 +117,7 @@
 				</select>
 			</label>
 
-			<a href="/help" class="help-link" title="Consulta la guida e le FAQ di Scheme">
+			<a href={resolve('/help')} class="help-link" title="Consulta la guida e le FAQ di Scheme">
 				<span>📚</span> Guida & FAQ
 			</a>
 		</div>
@@ -148,7 +149,7 @@
 							<div class="error-title">⚠️ Errore di Esecuzione</div>
 							<pre class="error-message">{executionError}</pre>
 							<div class="error-actions">
-								<a href="/help#ambienti-e-struttura" class="error-help-link">
+								<a href={resolve('/help#ambienti-e-struttura')} class="error-help-link">
 									Consulta la guida alla risoluzione errori ➔
 								</a>
 							</div>

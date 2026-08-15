@@ -20,7 +20,17 @@ export default defineConfig(
 		rules: {
 			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			'no-undef': 'off'
+			'no-undef': 'off',
+			'svelte/no-target-blank': 'error',
+			'no-restricted-syntax': [
+				'error',
+				{
+					// Intercetta attributi href che contengono una stringa semplice che inizia con /
+					selector: 'SvelteAttribute[key.name="href"] > SvelteLiteral[value=/^\\//]',
+					message:
+						'I link interni devono usare resolve() da "$app/paths" (es. href={resolve("/help")}).'
+				}
+			]
 		}
 	},
 	{

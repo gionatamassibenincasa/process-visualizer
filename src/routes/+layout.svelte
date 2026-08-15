@@ -1,5 +1,6 @@
 <!-- file: src/routes/+layout.svelte -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -20,7 +21,7 @@
 <div class="app-shell">
 	<nav class="app-nav">
 		<div class="nav-brand">
-			<a href="/" class="brand-link">
+			<a href={resolve('/')} class="brand-link">
 				<span class="lambda-logo">λ</span>
 				<span class="brand-text">
 					<strong>Process Visualizer</strong>
@@ -30,11 +31,11 @@
 		</div>
 
 		<div class="nav-links">
-			<a href="/" class="nav-item" data-sveltekit-preload-data="hover">
+			<a href={resolve('/')} class="nav-item" data-sveltekit-preload-data="hover">
 				<span class="nav-icon">⚡</span>
 				Visualizzatore
 			</a>
-			<a href="/help" class="nav-item" data-sveltekit-preload-data="hover">
+			<a href={resolve('/help')} class="nav-item" data-sveltekit-preload-data="hover">
 				<span class="nav-icon">📖</span>
 				Guida & FAQ
 			</a>

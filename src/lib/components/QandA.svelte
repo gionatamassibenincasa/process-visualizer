@@ -1,5 +1,6 @@
 <!-- file: src/lib/components/QandA.svelte -->
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { DomandaRisposta, EsempioFAQ } from '#lib/data/faq/types';
 
 	export type Esempio = EsempioFAQ;
@@ -108,7 +109,7 @@
 										</button>
 										<a
 											class="action-btn try-btn"
-											href="/?code={encodeURIComponent(item.contenuto)}"
+											href="{resolve('/')}?code={encodeURIComponent(item.contenuto)}"
 											title="Prova questo codice nel visualizzatore"
 										>
 											▶ Prova nell'Editor
