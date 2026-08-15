@@ -1,0 +1,50 @@
+{
+	"id": "grammatica-ebnf-e-interprete",
+	"titolo": "Grammatica Formale EBNF ed Interprete",
+	"icona": "book-open",
+	"descrizione": "Specifiche della grammatica formale del linguaggio Scheme, riscrittura AST e funzionamento dello stepper.",
+	"items": [
+		{
+			"id": "principio-isomorfismo-dato-codice",
+			"domanda": "Qual è il principio fondamentale che lega la grammatica dei dati alla struttura del codice?",
+			"risposta": "La forma del codice rispecchia la forma dei dati che elabora: a tipi definiti in modo induttivo o ricorsivo (come i numeri di Peano o le liste a cons-cells) corrispondono funzioni con casi base e chiamate ricorsive che ne ricalcano esattamente i costruttori grammaticali.",
+			"ebnf": "Programma        ::= Forma*\nForma            ::= Definizione | Espressione",
+			"esempio": [
+				{
+					"titolo": "Corrispondenza tra grammatica del dato e funzione",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n; Grammatica Lista: '() OPPURE (primo . resto)\n; Struttura Funzione: (null? l) [caso base] OPPURE elabora (car l) e ricorri su (cdr l)"
+				}
+			],
+			"tag": ["isomorfismo", "grammatica", "struttura"]
+		},
+		{
+			"id": "valutazione-ricorsiva-ast",
+			"domanda": "In che modo l'interprete valuta i programmi mediante l'albero AST?",
+			"risposta": "Poiché il codice Scheme è una struttura ad albero di espressioni simboliche (S-expressions), l'interprete (`StepperScheme`) attraversa ricorsivamente l'AST. Per ciascun nodo analizza il tipo (costante, definizione, condizionale, chiusura lambda o applicazione) e applica la regola di riduzione a piccoli passi (small-step reduction).",
+			"ebnf": "ProgrammaAST     ::= FormaAST*\nFormaAST         ::= DefineAST | AtomoAST | LambdaAST | IfAST | AndAST | OrAST | CondAST | ApplicazioneAST | CitazioneAST",
+			"esempio": [
+				{
+					"titolo": "Schema concettuale del valutatore ad albero",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n; (definisci valuta\n;   (lambda (e env)\n;     (cond\n;       ((atomo? e) (valuta-atomo e env))\n;       ((eq? (car e) 'se) (valuta-se e env))\n;       ((eq? (car e) 'lambda) (crea-chiusura e env))\n;       (altrimenti (valuta-applicazione e env)))))"
+				}
+			],
+			"tag": ["ast", "interprete", "stepper", "small-step"]
+		},
+		{
+			"id": "come-usare-stepper",
+			"domanda": "Come si legge la traccia visuale nello Stepper dell'applicazione?",
+			"risposta": "Il visualizzatore mostra a ogni passo:\n1. **Regola Applicata**: il tipo di riscrittura formale eseguito (es. 'Valutazione Argomento', 'Espansione Lambda', 'Test If').\n2. **Stato Precedente e Successivo**: la trasformazione esatta dell'espressione prima e dopo la riduzione.\n3. **Ambiente e Scope**: i binding attivi in ciascun livello lessicale (variabili globali e locali allocate dai parametri formali).",
+			"ebnf": "SnapshotPasso    ::= { indice, regola, precedente, successivo, ambiente, terminato, haRidotto }",
+			"esempio": [
+				{
+					"titolo": "Esempio traccia di riduzione",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(+ (* 2 3) 4)\n; Passo 1: (+ 6 4)  [Regola: Riduzione primitiva *]\n; Passo 2: 10        [Regola: Riduzione primitiva +]"
+				}
+			],
+			"tag": ["stepper", "ui", "timeline"]
+		}
+	]
+}

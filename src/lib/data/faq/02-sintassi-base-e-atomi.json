@@ -1,0 +1,106 @@
+{
+	"id": "sintassi-base-e-atomi",
+	"titolo": "Sintassi di Base, Variabili e Atomi",
+	"icona": "code",
+	"descrizione": "Identificatori, definizioni di variabili, atomi costanti, booleani, numeri e stringhe.",
+	"items": [
+		{
+			"id": "definizione-variabili",
+			"domanda": "Cos'è una variabile e come si definisce?",
+			"risposta": "Una variabile è un identificatore che associa un nome a un valore all'interno dell'ambiente corrente. Si crea usando la forma di definizione `(definisci <variabile> <espressione>)` o l'equivalente standard `(define <variabile> <espressione>)`.",
+			"ebnf": "Definizione      ::= \"(\" KwDefine Variabile Espressione \")\"\nKwDefine         ::= \"define\" | \"definisci\"\nVariabile        ::= Identificatore",
+			"esempio": [
+				{
+					"titolo": "Definizione di variabile",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci limite 100)\n(define totale 0)"
+				}
+			],
+			"tag": ["variabili", "define", "definisci"]
+		},
+		{
+			"id": "identificatori-caratteri",
+			"domanda": "Quali caratteri possiamo usare per formare un Identificatore?",
+			"risposta": "Un identificatore è un nome valido per variabili o funzioni. In Scheme le regole sono molto flessibili: puoi usare lettere, cifre e simboli speciali come `?`, `-`, `!`, `>`, `<`, `=`, `*`, consentendo di dare nomi espressivi e convenzionali (ad esempio `zero?`, `pari?` o `incrementa!`).",
+			"ebnf": "Identificatore   ::= Iniziale Successivo* | \"+\" | \"-\" | \"...\"\nIniziale         ::= Lettera | \"!\" | \"$\" | \"%\" | \"&\" | \"*\" | \"/\" | \":\" | \"<\" | \"=\" | \">\" | \"?\" | \"~\" | \"_\" | \"^\"\nSuccessivo       ::= Iniziale | Cifra | \".\" | \"+\" | \"-\"",
+			"esempio": [
+				{
+					"titolo": "Identificatori validi ed espressivi",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci numero-elementi 5)\n(definisci attivo? #vero)\n(definisci conta->stringa (lambda (n) \"risultato\"))"
+				}
+			],
+			"tag": ["identificatori", "lessico", "convenzioni"]
+		},
+		{
+			"id": "costanti-e-atomi",
+			"domanda": "Cos'è una Costante o Atomo?",
+			"risposta": "Una costante è un'espressione elementare che valuta direttamente se stessa. In Scheme, le costanti coincidono con gli atomi: booleani, numeri, stringhe o simboli. Sono i mattoni indivisibili su cui si costruiscono tutti i dati.",
+			"ebnf": "Costante         ::= Atomo\nAtomo            ::= Booleano | Numero | Stringa | Simbolo",
+			"esempio": [
+				{
+					"titolo": "Esempi di Atomi",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n42          ; Atomo Numero\n\"Scheme\"    ; Atomo Stringa\n#vero       ; Atomo Booleano"
+				}
+			],
+			"tag": ["atomo", "costanti", "tipi"]
+		},
+		{
+			"id": "valori-booleani",
+			"domanda": "Come si rappresentano i valori di verità (Booleani)?",
+			"risposta": "I booleani rappresentano la verità o la falsità. Il linguaggio supporta sia le forme sintattiche tradizionali inglesi (`#t`, `#f`, `#true`, `#false`) sia le abbreviazioni/traduzioni italiane (`#vero`, `#falso`).",
+			"ebnf": "Booleano         ::= \"#t\" | \"#f\" | \"#true\" | \"#false\" | \"#vero\" | \"#falso\"",
+			"esempio": [
+				{
+					"titolo": "Sintassi Booleana",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci verificato #vero)\n(definisci terminato #falso)"
+				}
+			],
+			"tag": ["booleani", "valori", "costanti"]
+		},
+		{
+			"id": "valutazione-booleani",
+			"domanda": "Cosa restituisce l'interprete quando valuta un Booleano?",
+			"risposta": "Un booleano è una costante autovalutante: quando l'interprete lo incontra, il suo valore è il booleano stesso. Non richiede alcuna ricerca nell'ambiente o ulteriore elaborazione.",
+			"ebnf": "Espressione      ::= Costante\nCostante         ::= Atomo\nAtomo            ::= Booleano",
+			"esempio": [
+				{
+					"titolo": "Valutazione di un Booleano",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n#vero   ; restituisce #vero\n#falso  ; restituisce #falso"
+				}
+			],
+			"tag": ["booleani", "valutazione", "semantica"]
+		},
+		{
+			"id": "rappresentazione-numeri",
+			"domanda": "Come vengono formati ed espressi i Numeri?",
+			"risposta": "Un numero è un atomo composto da una sequenza di cifre in base 10, opzionalmente preceduta da un segno positivo `+` o negativo `-`. Negli ambienti numerici di base (come `minimo-numeri-naturali`), rappresenta i numeri interi o naturali.",
+			"ebnf": "Numero           ::= [\"-\"|\"+\"] Cifra+\nCifra            ::= \"0\"..\"9\"",
+			"esempio": [
+				{
+					"titolo": "Rappresentazione dei Numeri",
+					"tipo": "codice",
+					"contenuto": "; ambiente: minimo-numeri-naturali\n0\n+42\n-7"
+				}
+			],
+			"tag": ["numeri", "atomi", "sintassi"]
+		},
+		{
+			"id": "valutazione-variabile",
+			"domanda": "Come valuta l'interprete una Variabile?",
+			"risposta": "Quando l'interprete valuta un identificatore usato come variabile, cerca il suo nome nell'ambiente corrente e restituisce il valore a esso associato. Se il nome non è presente nell'ambiente, viene generato un errore di runtime (Undefined Symbol).",
+			"ebnf": "Espressione      ::= Variabile\nVariabile        ::= Identificatore",
+			"esempio": [
+				{
+					"titolo": "Lookup nell'ambiente",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci x 10)\nx ; L'interprete cerca 'x' nell'ambiente e restituisce 10"
+				}
+			],
+			"tag": ["variabili", "lookup", "ambiente"]
+		}
+	]
+}

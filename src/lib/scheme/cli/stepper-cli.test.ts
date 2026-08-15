@@ -61,4 +61,30 @@ describe('stepper-cli', () => {
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});
+
+	test('genera output Markdown per Slidev (sli.dev)', () => {
+		const dir = mkdtempSync(path.join(tmpdir(), 'scheme-cli-slidev-'));
+		const file = path.join(dir, 'slidev.scm');
+
+		try {
+			writeFileSync(file, '(define x 42) x\n', 'utf-8');
+
+			const output = eseguiStepperDaFile({
+				filePath: file,
+				maxPassi: 20,
+				format: 'slidev',
+				interactive: false,
+				ambiente: undefined
+			});
+
+			expect(output).toContain('theme: default');
+			expect(output).toContain('title: "Esecuzione Scheme: slidev.scm"');
+			expect(output).toContain('---');
+			expect(output).toContain('### Stato AST');
+			expect(output).toContain('```scheme');
+			expect(output).toContain('> **Regola applicata:**');
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
 });

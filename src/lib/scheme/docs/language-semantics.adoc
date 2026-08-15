@@ -1,41 +1,74 @@
 = Language Semantics
-:toc:
+:toc: left
+:toclevels: 3
+:sectnums:
 
 == Scopo
 
-Definire la semantica operativa del sottoinsieme Scheme supportato.
+Definire formalmente la semantica operativa a piccoli passi (*small-step operational semantics*) del sottoinsieme Scheme supportato.
 
-== Forme valutabili
+== Forme Valutabili e Tipi AST
 
-- Atomo: auto-valutante se numero/boolean/stringa, altrimenti lookup simbolo.
-- Define: valuta il valore, inserisce binding, restituisce valore definito.
-- If: valuta condizione, seleziona then/else.
-- Cond: valuta clausole in ordine, prima vera vince.
-- Applicazione: valuta operatore/argomenti e applica primitiva.
-- Programma: valuta le forme top-level in ordine.
+[cols="1,2,3", options="header"]
+|===
+| Forma | Nodo AST | Semantica Operativa
+| **Atomo** | `AtomoAST` | I valori letterali (numeri, booleani, stringhe) sono auto-valutanti. I simboli vengono risolti cercandoli nell'ambiente di esecuzione (`env.applica`).
+| **Define** | `DefineAST` | Se l'espressione associata non è contratta ad atomo/chiusura, ne esegue la riduzione a piccoli passi; quando ridotta, lega il simbolo all'ambiente corrente e restituisce il valore.
+| **If / Se** | `IfAST` | Valuta l'espressione di condizione. Se è `#t` (o truthy non `#f`), seleziona il ramo *then*; se è `#f`, seleziona il ramo *else* (default `#f` se omesso).
+| **And / E** | `AndAST` | Valuta le espressioni da sinistra a destra con cortocircuito: se un'espressione si riduce a `#f`, l'intera forma si riduce immediatamente a `#f`.
+| **Or / O** | `OrAST` | Valuta le espressioni da sinistra a destra con cortocircuito: se un'espressione si riduce a un valore truthy, l'intera forma si riduce immediatamente a quel valore.
+| **Cond** | `CondAST` | Valuta sequenzialmente le clausole `(condizione conseguente...)`. Se la condizione è vera (o `else`/`altrimenti`), riduce al conseguente. Se la condizione è `#f`, la clausola viene scartata.
+| **Lambda** | `LambdaAST` | Crea ed incapsula una chiusura lessicale `Chiusura` contenente i nomi dei parametri, i nodi del corpo e il riferimento all'ambiente in cui è definita.
+| **Citazione** | `CitazioneAST` | Preserva il dato letterale (`Atomo`, `Lista` o `Coppia`) senza eseguire alcuna valutazione interna dei simboli contenuti.
+| **Applicazione** | `ApplicazioneAST` | Valuta operatore ed argomenti da sinistra a destra. Se l'operatore è una funzione primitiva TypeScript, esegue l'applicazione diretta; se è una `Chiusura`, sostituisce i parametri formali con i valori degli argomenti ed espande il corpo.
+| **Programma** | `ProgrammaAST` | Riduce in sequenza le forme top-level fino al loro completamento.
+|===
 
-== Regole di riduzione (alto livello)
+== Regole di Riduzione Dettagliate
 
-1. Programma
-- riduci la prima forma non finale
-- se tutte finali: programma terminato
+=== 1. Programma (`ProgrammaAST`)
+- Scansiona la lista delle forme da sinistra a destra.
+- Applica un passo di riduzione sulla prima forma non ancora terminata.
+- Se tutte le forme sono state completamente ridotte, il programma è considerato `èTerminato = true`.
 
-2. Define
-- se valore non ridotto: riduci valore
-- altrimenti: inserisci binding in ambiente
+=== 2. Definizioni (`DefineAST`)
+- Se il valore da associare è un'espressione non ancora ridotta (e diversa da una `LambdaAST`), applica un passo di riduzione sull'espressione.
+- Se il valore è una `LambdaAST`, crea la chiusura lessicale, la memorizza nell'ambiente per il simbolo dato e produce un atomo `#<chiusura:nome>`.
+- Se il valore è un atomo ridotto o una costante, inserisce il legame `nome -> valore` nello scope locale e produce un nodo `AtomoAST(valore)`.
 
-3. Applicazione
-- riduci operatore se necessario
-- risolvi argomenti simbolici
-- riduci argomenti left-to-right
-- applica funzione se operatore e argomenti sono pronti
+=== 3. Condizionale `If` (`IfAST`)
+- Se la condizione è un `AtomoAST(boolean)`:
+  * Se `true`, l'AST si riduce al ramo *then*.
+  * Se `false`, l'AST si riduce al ramo *else*.
+- Se la condizione non è ancora un atomo booleano, applica un passo di riduzione alla condizione.
 
-== Tracciabilita grammatica
+=== 4. Congiunzione `And` (`AndAST`)
+- Se la lista delle espressioni è vuota, si riduce a `#t`.
+- Se la prima espressione si riduce a `#f`, si applica il cortocircuito riducendo l'intera forma a `AtomoAST(false)`.
+- Se la prima espressione è un atomo truthy e ci sono altre espressioni, la prima espressione viene scartata avanzando a `AndAST(rimanenti)`.
+- Se la prima espressione non è ridotta, applica un passo su di essa.
 
-La grammatica canonica e in [ast/grammar.md](../ast/grammar.md).
-Ogni estensione grammaticale deve riflettersi in:
+=== 5. Disgiunzione `Or` (`OrAST`)
+- Se la lista delle espressioni è vuota, si riduce a `#f`.
+- Se la prima espressione si riduce a un valore truthy (non `#f`), si applica il cortocircuito riducendo l'intera forma a quel valore.
+- Se la prima espressione è `#f` e ci sono altre espressioni, scarta `#f` avanzando a `OrAST(rimanenti)`.
+- Se la prima espressione non è ridotta, applica un passo su di essa.
 
-- nodo AST esplicito
-- regola parser dedicata
-- formato canonico formatter
-- regola stepper o TODO semantico
+=== 6. Condizionale Multi-ramo `Cond` (`CondAST`)
+- Se non vi sono clausole, si riduce a `#f`.
+- Se la condizione della prima clausola è `else`, `altrimenti` o `#t`, sostituisce l'intera forma con il conseguente della prima clausola.
+- Se la condizione è `#f`, scarta la prima clausola e si riduce a `CondAST(clausoleRimanenti)`.
+- Altrimenti applica un passo di riduzione sulla condizione della prima clausola.
+
+=== 7. Applicazione di Funzione (`ApplicazioneAST`)
+- Se l'operatore non è un atomo o una lambda, applica un passo di riduzione sull'operatore.
+- Risolve eventuali argomenti simbolici cercandoli nell'ambiente.
+- Riduce gli argomenti che non sono ancora in forma atomica/valore.
+- Se operatore ed argomenti sono pronti:
+  * Se l'operatore è una `FunzionePrimitiva`, viene eseguita la funzione nativa TS e l'AST si riduce al risultato.
+  * Se l'operatore è una `Chiusura`, viene istanziato il corpo sostituendo i parametri formali con gli argomenti attuali (Alpha conversion / Substitution Model).
+
+== Tracciabilità Grammatica
+
+La grammatica formale EBNF e la matrice di corrispondenza sono definite in [`src/lib/scheme/ast/grammar.md`](../ast/grammar.md).
+

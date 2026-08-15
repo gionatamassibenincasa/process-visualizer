@@ -1,0 +1,78 @@
+{
+	"id": "forme-di-controllo",
+	"titolo": "Forme di Controllo e Condizionali",
+	"icona": "git-branch",
+	"descrizione": "I costrutti decisionali di Scheme: if/se, and/e, or/o e cond con clausole else/altrimenti.",
+	"items": [
+		{
+			"id": "forma-if-se",
+			"domanda": "Come funziona la forma condizionale 'if' / 'se'?",
+			"risposta": "La forma `(se <condizione> <ramo-allora> <ramo-altrimenti>?)` o `(if ...)` valuta prima la condizione. Se il valore ottenuto è `#t` (o un qualsiasi valore non falso), restituisce la valutazione del ramo allora; se è `#f`, restituisce la valutazione del ramo altrimenti (oppure `#f` se il ramo è omesso).",
+			"ebnf": "If               ::= \"(\" KwIf Espressione Espressione Espressione? \")\"\nKwIf             ::= \"if\" | \"se\"",
+			"esempio": [
+				{
+					"titolo": "Uso del condizionale se / if",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci assoluto\n  (lambda (n)\n    (se (< n 0)\n        (- 0 n)\n        n)))\n\n(assoluto -15) ; restituisce 15"
+				}
+			],
+			"tag": ["if", "se", "condizionale"]
+		},
+		{
+			"id": "forma-and-e",
+			"domanda": "Come funziona l'operatore logico 'and' / 'e'?",
+			"risposta": "`and` (o `e`) valuta sequenzialmente le espressioni da sinistra a destra con cortocircuito: al primo valore che risulta `#f`, interrompe la valutazione e restituisce immediatamente `#f`. Se tutte le espressioni sono vere, restituisce il valore dell'ultima espressione.",
+			"ebnf": "And              ::= \"(\" KwAnd Espressione* \")\"\nKwAnd            ::= \"and\" | \"e\"",
+			"esempio": [
+				{
+					"titolo": "Cortocircuito logico con 'e' / 'and'",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(e (> 5 0) (< 5 10)) ; restituisce #t\n(e #falsità-mai-raggiunta #t) ; cortocircuita subito su falso"
+				}
+			],
+			"tag": ["and", "e", "logica", "cortocircuito"]
+		},
+		{
+			"id": "forma-or-o",
+			"domanda": "Come funziona l'operatore logico 'or' / 'o'?",
+			"risposta": "`or` (o `o`) valuta sequenzialmente le espressioni da sinistra a destra con cortocircuito: non appena un'espressione valuta a un valore diverso da `#f`, restituisce immediatamente quel valore senza valutare i rami successivi. Se tutte le espressioni sono `#f`, restituisce `#f`.",
+			"ebnf": "Or               ::= \"(\" KwOr Espressione* \")\"\nKwOr             ::= \"or\" | \"o\"",
+			"esempio": [
+				{
+					"titolo": "Cortocircuito disgiuntivo con 'o' / 'or'",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(o (< 10 5) (> 10 5)) ; restituisce #t"
+				}
+			],
+			"tag": ["or", "o", "logica", "cortocircuito"]
+		},
+		{
+			"id": "forma-cond",
+			"domanda": "Come funziona la forma multi-ramo 'cond'?",
+			"risposta": "`cond` valuta una sequenza di clausole `(condizione conseguente...)` una per una. Se la condizione di una clausola valuta a vero (o è la parola chiave `else` / `altrimenti`), restituisce il risultato del conseguente associato e salta tutte le clausole rimanenti.",
+			"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"\nClausolaCond     ::= \"(\" TestCond Espressione+ \")\"\nTestCond         ::= Espressione | KwElse\nKwElse           ::= \"else\" | \"altrimenti\"",
+			"esempio": [
+				{
+					"titolo": "Classificazione con cond e altrimenti",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci segno\n  (lambda (n)\n    (cond\n      ((< n 0) \"negativo\")\n      ((zero? n) \"zero\")\n      (altrimenti \"positivo\"))))\n\n(segno 42) ; restituisce \"positivo\""
+				}
+			],
+			"tag": ["cond", "else", "altrimenti", "diramazione"]
+		},
+		{
+			"id": "definizioni-locali",
+			"domanda": "Come si usano le definizioni locali all'interno del corpo di una funzione?",
+			"risposta": "In Scheme il *Corpo* di una `lambda` può contenere una o più *Forme*. Possiamo inserire delle `Definizione` (`definisci` / `define`) all'inizio del corpo per dichiarare funzioni ausiliarie o valori intermedi visibili solo dentro il corpo della funzione stessa.",
+			"ebnf": "Corpo            ::= Forma+\nForma            ::= Definizione | Espressione",
+			"esempio": [
+				{
+					"titolo": "Definizione locale nel corpo",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci somma-quadrati\n  (lambda (a b)\n    (definisci q (lambda (x) (* x x))) ; Definizione ausiliaria locale\n    (+ (q a) (q b))))\n\n(somma-quadrati 3 4) ; restituisce 25"
+				}
+			],
+			"tag": ["definizioni-locali", "lambda", "corpo"]
+		}
+	]
+}

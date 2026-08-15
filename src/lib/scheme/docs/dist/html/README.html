@@ -2042,18 +2042,26 @@
 			<div id="preamble">
 				<div class="sectionbody">
 					<div class="paragraph">
-						<p>Questa cartella contiene la documentazione tecnica del motore Scheme orientata a:</p>
+						<p>
+							Questa cartella contiene la documentazione tecnica del motore dell&#8217;interprete
+							Scheme (<code>src/lib/scheme</code>) orientata a:
+						</p>
 					</div>
 					<div class="ulist">
 						<ul>
 							<li>
-								<p>comprensione umana (architettura, semantica, integrazione)</p>
+								<p>comprensione umana (architettura, semantica operativa, integrazione web)</p>
 							</li>
 							<li>
-								<p>consumo da LLM (contratti espliciti, output deterministici, esempi canonici)</p>
+								<p>
+									consumo da LLM (contratti API espliciti, output deterministici, esempi canonici)
+								</p>
 							</li>
 							<li>
-								<p>integrazione API verso web app (timeline di riduzione AST)</p>
+								<p>
+									integrazione API verso la web app (timeline di riduzione AST, streaming dei passi,
+									istantanee degli ambienti)
+								</p>
 							</li>
 						</ul>
 					</div>
@@ -2065,25 +2073,48 @@
 					<div class="ulist">
 						<ul>
 							<li>
-								<p><a href="architecture.html">Architecture</a></p>
+								<p>
+									<a href="architecture.html">Architecture</a> - Architettura della pipeline Lexer
+									&#8594; Parser &#8594; Stepper &#8594; Formatter &#8594; Ambiente.
+								</p>
 							</li>
 							<li>
-								<p><a href="language-semantics.html">Language Semantics</a></p>
+								<p>
+									<a href="language-semantics.html">Language Semantics</a> - Semantica operativa
+									dettagliata e regole di riduzione delle forme speciali.
+								</p>
 							</li>
 							<li>
-								<p><a href="api-contracts.html">API Contracts</a></p>
+								<p>
+									<a href="api-contracts.html">API Contracts</a> - Contratti API stabili per
+									<code>StepperScheme</code>, <code>Ambiente</code>, <code>FormatterScheme</code> e
+									la factory degli ambienti.
+								</p>
 							</li>
 							<li>
-								<p><a href="web-integration.html">Web Integration</a></p>
+								<p>
+									<a href="web-integration.html">Web Integration</a> - Linee guida per
+									l&#8217;integrazione del visualizzatore nella UI web (snapshot, streaming,
+									direttive di ambiente).
+								</p>
 							</li>
 							<li>
-								<p><a href="error-model.html">Error Model</a></p>
+								<p>
+									<a href="error-model.html">Error Model</a> - Modellazione formale degli errori
+									(Sintattici, Runtime, Arity Mismatch, Undefined Symbol).
+								</p>
 							</li>
 							<li>
-								<p><a href="checklist-retrodoc.html">Retro-Documentation Checklist</a></p>
+								<p>
+									<a href="checklist-retrodoc.html">Retro-Documentation Checklist</a> - Matrice di
+									tracciabilità e checklist di allineamento.
+								</p>
 							</li>
 							<li>
-								<p><a href="adr/0001-docs-strategy.html">ADR-0001 Docs Strategy</a></p>
+								<p>
+									<a href="adr/0001-docs-strategy.html">ADR-0001 Docs Strategy</a> - Decisione
+									architetturale sulla strategia di documentazione ibrida.
+								</p>
 							</li>
 						</ul>
 					</div>
@@ -2093,24 +2124,59 @@
 				<h2 id="_ambito_corrente">2. Ambito corrente</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
-						<p>Motore in analisi:</p>
+						<p>Modulo Scheme in <code>src/lib/scheme</code>:</p>
 					</div>
 					<div class="ulist">
 						<ul>
 							<li>
-								<p>AST: costruzione nodi e visitor</p>
+								<p>
+									<strong>AST</strong> (<code>ast/</code>): costruzione nodi
+									(<code>ProgrammaAST</code>, <code>AtomoAST</code>, <code>DefineAST</code>,
+									<code>LambdaAST</code>, <code>IfAST</code>, <code>AndAST</code>,
+									<code>OrAST</code>, <code>CondAST</code>, <code>ApplicazioneAST</code>,
+									<code>CitazioneAST</code>) e pattern Visitor.
+								</p>
 							</li>
 							<li>
-								<p>Lexer: tokenizzazione sorgente Scheme</p>
+								<p>
+									<strong>Lexer</strong> (<code>lexer/</code>): tokenizzazione del sorgente Scheme
+									(<code>analizzatoreLessicale</code>, <code>TipoDiParole</code>).
+								</p>
 							</li>
 							<li>
-								<p>Parser: sorgente &#8594; ProgrammaAST</p>
+								<p>
+									<strong>Parser</strong> (<code>ast/parser.ts</code>): trasformazione token &#8594;
+									<code>ProgrammaAST</code> a discesa ricorsiva.
+								</p>
 							</li>
 							<li>
-								<p>Stepper: riduzione small-step</p>
+								<p>
+									<strong>Runtime &amp; Ambienti</strong> (<code>runtime/</code>): gestione scope
+									lessicale (<code>Ambiente</code>), profili registrati (<code>standard</code>,
+									<code>minimo-numeri-naturali</code>, <code>nat-add-sot-min</code>), tipi di valore
+									(<code>ValoreScheme</code>, <code>Chiusura</code>,
+									<code>FunzionePrimitiva</code>).
+								</p>
 							</li>
 							<li>
-								<p>Formatter: rendering simbolico e timeline snapshot</p>
+								<p>
+									<strong>Stepper</strong> (<code>runtime/stepper.ts</code>): motore di riduzione
+									small-step (<code>StepperScheme</code>), supporto sia per l&#8217;intera timeline
+									che per lo streaming via generatori (<code>passiStream</code>).
+								</p>
+							</li>
+							<li>
+								<p>
+									<strong>Formatter</strong> (<code>ast/formatter.ts</code>): rendering simbolico
+									canonico e produzione di istantanee timeline per la UI.
+								</p>
+							</li>
+							<li>
+								<p>
+									<strong>CLI</strong> (<code>cli/stepper-cli.ts</code>): interfaccia a riga di
+									comando per l&#8217;ispezione delle riduzioni con flag <code>--json</code>,
+									<code>--max-passi</code>, <code>--ambiente</code>.
+								</p>
 							</li>
 						</ul>
 					</div>
@@ -2122,14 +2188,22 @@
 					<div class="ulist">
 						<ul>
 							<li>
-								<p>Ogni API pubblica deve avere JSDoc con precondizioni, postcondizioni, errori.</p>
-							</li>
-							<li>
-								<p>Ogni esempio in docs deve essere eseguibile o verificabile via test.</p>
+								<p>
+									Ogni file sorgente <code>.ts</code> in <code>src/lib/scheme</code> comincia con il
+									commento del percorso di file (es.
+									<code>// file: src/lib/scheme/&#8230;&#8203;</code>).
+								</p>
 							</li>
 							<li>
 								<p>
-									Ogni modifica semantica richiede aggiornamento della matrice di tracciabilita.
+									Ogni simbolo esportato dispone di documentazione JSDoc estesa con precondizioni,
+									postcondizioni, eccezioni lanciate ed esempi d&#8217;uso.
+								</p>
+							</li>
+							<li>
+								<p>
+									Ogni esempio o contratto definito nei documenti è verificato da test automatizzati
+									(<code>bun test</code>).
 								</p>
 							</li>
 						</ul>
@@ -2176,7 +2250,7 @@
 			</div>
 		</div>
 		<div id="footer">
-			<div id="footer-text">Last updated 2026-08-04 08:54:58 +0200</div>
+			<div id="footer-text">Last updated 2026-08-15 15:36:00 +0200</div>
 		</div>
 	</body>
 </html>

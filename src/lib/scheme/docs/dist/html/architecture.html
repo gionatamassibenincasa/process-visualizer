@@ -2025,163 +2025,374 @@
 			}
 		</style>
 	</head>
-	<body class="article">
+	<body class="article toc2 toc-left">
 		<div id="header">
 			<h1>Architecture</h1>
-			<div id="toc" class="toc">
+			<div id="toc" class="toc2">
 				<div id="toctitle">Table of Contents</div>
 				<ul class="sectlevel1">
-					<li><a href="#_obiettivo">Obiettivo</a></li>
-					<li><a href="#_pipeline_principale">Pipeline principale</a></li>
+					<li><a href="#_obiettivo">1. Obiettivo</a></li>
+					<li><a href="#_pipeline_principale">2. Pipeline principale</a></li>
 					<li>
-						<a href="#_componenti">Componenti</a>
+						<a href="#_componenti_principali">3. Componenti Principali</a>
 						<ul class="sectlevel2">
-							<li><a href="#_lexer">Lexer</a></li>
-							<li><a href="#_parser">Parser</a></li>
-							<li><a href="#_stepper">Stepper</a></li>
-							<li><a href="#_formatter">Formatter</a></li>
+							<li>
+								<a href="#_lexer_srclibschemelexer"
+									>3.1. Lexer (<code>src/lib/scheme/lexer/</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_parser_srclibschemeastparser_ts"
+									>3.2. Parser (<code>src/lib/scheme/ast/parser.ts</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_ambienti_di_calcolo_srclibschemeruntimeambiente_ts"
+									>3.3. Ambienti di Calcolo (<code>src/lib/scheme/runtime/ambiente*.ts</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_stepper_srclibschemeruntimestepper_ts"
+									>3.4. Stepper (<code>src/lib/scheme/runtime/stepper.ts</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_formatter_srclibschemeastformatter_ts"
+									>3.5. Formatter (<code>src/lib/scheme/ast/formatter.ts</code>)</a
+								>
+							</li>
 						</ul>
 					</li>
-					<li><a href="#_principi_architetturali">Principi architetturali</a></li>
+					<li><a href="#_principi_architetturali">4. Principi Architetturali</a></li>
 				</ul>
 			</div>
 		</div>
 		<div id="content">
 			<div class="sect1">
-				<h2 id="_obiettivo">Obiettivo</h2>
+				<h2 id="_obiettivo">1. Obiettivo</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
 						<p>
-							Visualizzare l&#8217;evoluzione di un programma Scheme come sequenza di trasformazioni
-							AST fino al termine.
+							Visualizzare e tracciare l&#8217;evoluzione di un programma Scheme come sequenza
+							deterministica di trasformazioni dell&#8217;Albero Sintattico Astratto (AST) e dello
+							stato degli ambienti di calcolo fino al raggiungimento della forma normale
+							irriducibile.
 						</p>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_pipeline_principale">Pipeline principale</h2>
+				<h2 id="_pipeline_principale">2. Pipeline principale</h2>
 				<div class="sectionbody">
 					<div class="listingblock">
 						<div class="content">
-							<pre class="highlight"><code class="language-text" data-lang="text">Source Code
-  -&gt; Lexer (tokens)
-  -&gt; Parser (ProgrammaAST)
-  -&gt; Stepper (PassoStepping[])
-  -&gt; Formatter (SnapshotPassoStepping[])
-  -&gt; Web UI Timeline</code></pre>
+							<pre
+								class="highlight"
+							><code class="language-text" data-lang="text">Codice Sorgente Scheme
+  -&gt; Lexer (analizzatoreLessicale -&gt; Parola[])
+  -&gt; Parser (ParserScheme -&gt; ProgrammaAST)
+  -&gt; Stepper (StepperScheme -&gt; PassoStepping[] / passiStream)
+  -&gt; Formatter (FormatterScheme -&gt; SnapshotPassoStepping[])
+  -&gt; Visualizzazione UI Web / CLI Output</code></pre>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_componenti">Componenti</h2>
+				<h2 id="_componenti_principali">3. Componenti Principali</h2>
 				<div class="sectionbody">
 					<div class="sect2">
-						<h3 id="_lexer">Lexer</h3>
+						<h3 id="_lexer_srclibschemelexer">3.1. Lexer (<code>src/lib/scheme/lexer/</code>)</h3>
 						<div class="paragraph">
-							<p>Responsabilita:</p>
+							<p><strong>Responsabilità:</strong></p>
 						</div>
 						<div class="ulist">
 							<ul>
 								<li>
-									<p>tokenizzazione del sorgente</p>
+									<p>
+										Tokenizzazione del codice sorgente Scheme tramite
+										<code>analizzatoreLessicale</code>.
+									</p>
 								</li>
 								<li>
-									<p>normalizzazione booleana base</p>
+									<p>
+										Riconoscimento di tipi di token (<code>TipoDiParole</code>): Parentesi, Booleani
+										(<code>#t</code>, <code>#f</code>), Numeri, Stringhe, Simboli, Citazione
+										(<code>'</code>), Punto (<code>.</code>), Commenti (ignorati).
+									</p>
 								</li>
 								<li>
-									<p>gestione quote, parentesi, punto</p>
+									<p>
+										Tracciamento della posizione dei token nel sorgente per messaggi di errore ed
+										ispezione.
+									</p>
 								</li>
 							</ul>
 						</div>
 						<div class="paragraph">
-							<p>Output: sequenza di token con FineDelFile.</p>
+							<p>
+								<strong>Output:</strong> Sequenza ordinata di token (<code>Parola[]</code>)
+								terminata dal token sintetico <code>FineDelFile</code>.
+							</p>
 						</div>
 					</div>
 					<div class="sect2">
-						<h3 id="_parser">Parser</h3>
+						<h3 id="_parser_srclibschemeastparser_ts">
+							3.2. Parser (<code>src/lib/scheme/ast/parser.ts</code>)
+						</h3>
 						<div class="paragraph">
-							<p>Responsabilita:</p>
+							<p><strong>Responsabilità:</strong></p>
 						</div>
 						<div class="ulist">
 							<ul>
 								<li>
-									<p>parsing top-level in ProgrammaAST</p>
+									<p>Parsing top-level a discesa ricorsiva da token a <code>ProgrammaAST</code>.</p>
 								</li>
 								<li>
-									<p>gestione forme speciali (define, lambda, if, and, or, cond)</p>
+									<p>Parsing delle forme speciali tipizzate:</p>
+									<div class="ulist">
+										<ul>
+											<li>
+												<p>
+													<code>DefineAST</code>: definizioni di variabili e funzioni
+													(<code>define</code>, <code>definisci</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>LambdaAST</code>: espressioni di chiusura di funzione
+													(<code>lambda</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>IfAST</code>: condizionale binario (<code>if</code>,
+													<code>se</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>AndAST</code>: congiunzione logica a n-argomenti con cortocircuito
+													(<code>and</code>, <code>e</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>OrAST</code>: disgiunzione logica a n-argomenti con cortocircuito
+													(<code>or</code>, <code>o</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>CondAST</code>: condizionale multi-ramo con clausole e ramo
+													<code>else</code> / <code>altrimenti</code>.
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>CitazioneAST</code>: citazioni di atomi, liste e coppie puntate
+													(<code>quote</code>, <code>cita</code>, <code>'</code>).
+												</p>
+											</li>
+											<li>
+												<p><code>ApplicazioneAST</code>: chiamate di funzione e primitive.</p>
+											</li>
+										</ul>
+									</div>
 								</li>
 								<li>
-									<p>parsing datum citati (lista, coppia puntata)</p>
+									<p>
+										Sollevamento di <code>SyntaxError</code> strutturati in caso di sintassi non
+										valida.
+									</p>
 								</li>
 							</ul>
 						</div>
 						<div class="paragraph">
-							<p>Output: AST tipizzato e navigabile con visitor.</p>
+							<p>
+								<strong>Output:</strong> Albero AST radice <code>ProgrammaAST</code> navigabile via
+								Visitor pattern.
+							</p>
 						</div>
 					</div>
 					<div class="sect2">
-						<h3 id="_stepper">Stepper</h3>
+						<h3 id="_ambienti_di_calcolo_srclibschemeruntimeambiente_ts">
+							3.3. Ambienti di Calcolo (<code>src/lib/scheme/runtime/ambiente*.ts</code>)
+						</h3>
 						<div class="paragraph">
-							<p>Responsabilita:</p>
+							<p><strong>Responsabilità:</strong></p>
 						</div>
 						<div class="ulist">
 							<ul>
 								<li>
-									<p>riduzione small-step di un nodo</p>
+									<p>
+										Gestione dello scope lessicale gerarchico (parent/child) tramite la classe
+										<code>Ambiente&lt;ValoreScheme&gt;</code>.
+									</p>
 								</li>
 								<li>
-									<p>riduzione sequenziale di ProgrammaAST</p>
+									<p>Risoluzione dei simboli con ricerca ricorsiva lungo la catena di ambienti.</p>
 								</li>
 								<li>
-									<p>mantenimento ambiente di valutazione</p>
+									<p>
+										Generazione di istantanee dello stato (<code>SnapshotAmbiente</code> e
+										<code>SnapshotScopeAmbiente</code>) serializzate per ogni passo.
+									</p>
+								</li>
+								<li>
+									<p>
+										Registro profili d&#8217;ambiente predefiniti via
+										<code>creaAmbiente(id)</code> e <code>registroAmbienti</code>:
+									</p>
+									<div class="ulist">
+										<ul>
+											<li>
+												<p>
+													<code>"standard"</code>: include lista vuota, primitive aritmetiche,
+													logiche e predicati di lista.
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>"minimo-numeri-naturali"</code>: sottoinsieme minimo per aritmetica
+													Peano (<code>zero?</code>, <code>s</code>, <code>p</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													<code>"nat-add-sot-min"</code>: aritmetica estesa per algoritmi di
+													divisione.
+												</p>
+											</li>
+										</ul>
+									</div>
 								</li>
 							</ul>
-						</div>
-						<div class="paragraph">
-							<p>Output: PassoStepping con stato precedente/successivo, regola, terminazione.</p>
 						</div>
 					</div>
 					<div class="sect2">
-						<h3 id="_formatter">Formatter</h3>
+						<h3 id="_stepper_srclibschemeruntimestepper_ts">
+							3.4. Stepper (<code>src/lib/scheme/runtime/stepper.ts</code>)
+						</h3>
 						<div class="paragraph">
-							<p>Responsabilita:</p>
+							<p><strong>Responsabilità:</strong></p>
 						</div>
 						<div class="ulist">
 							<ul>
 								<li>
-									<p>serializzazione canonica AST</p>
+									<p>
+										Riduzione a piccoli passi (<strong>small-step reduction</strong>) di un nodo AST
+										o dell&#8217;intero <code>ProgrammaAST</code>.
+									</p>
 								</li>
 								<li>
-									<p>produzione timeline snapshot per UI</p>
+									<p>Esecuzione del ciclo di riduzione:</p>
+									<div class="olist arabic">
+										<ol class="arabic">
+											<li>
+												<p>Risoluzione dei simboli nello scope corrente.</p>
+											</li>
+											<li>
+												<p>Valutazione left-to-right degli argomenti nelle applicazioni.</p>
+											</li>
+											<li>
+												<p>
+													Riscrittura sostitutiva delle clausole per <code>if</code>,
+													<code>and</code>, <code>or</code>, <code>cond</code>.
+												</p>
+											</li>
+											<li>
+												<p>
+													Applicazione di funzioni primitive TypeScript
+													(<code>FunzionePrimitiva</code>).
+												</p>
+											</li>
+											<li>
+												<p>
+													Riscrittura lambda con sostituzione dei parametri formali
+													(<code>Chiusura</code>).
+												</p>
+											</li>
+										</ol>
+									</div>
 								</li>
 								<li>
-									<p>serializzazione lineare per log/debug</p>
+									<p>
+										Generazione della sequenza di <code>PassoStepping</code> contenente
+										<code>astPrecedente</code>, <code>astSuccessivo</code>,
+										<code>regolaApplicata</code>, <code>èTerminato</code> e lo
+										<code>SnapshotAmbiente</code>.
+									</p>
+								</li>
+								<li>
+									<p>
+										Supporto sia per la timeline completa (<code>passiDaSorgente</code>) sia per la
+										fruizione pigra/streaming (<code>passiStream</code>).
+									</p>
 								</li>
 							</ul>
 						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_formatter_srclibschemeastformatter_ts">
+							3.5. Formatter (<code>src/lib/scheme/ast/formatter.ts</code>)
+						</h3>
 						<div class="paragraph">
-							<p>Output: stringhe simboliche e DTO di tracing.</p>
+							<p><strong>Responsabilità:</strong></p>
+						</div>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>
+										Rendering simbolico canonico in stringa Scheme per ogni nodo AST tramite
+										<code>FormatterScheme</code> (Visitor).
+									</p>
+								</li>
+								<li>
+									<p>
+										Conversione dei <code>PassoStepping</code> nei DTO di snapshot
+										(<code>SnapshotPassoStepping</code>) per l&#8217;integrazione frontend.
+									</p>
+								</li>
+								<li>
+									<p>
+										Generazione di tracce testuali lineari per il debugging ed il tracciamento via
+										CLI.
+									</p>
+								</li>
+							</ul>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_principi_architetturali">Principi architetturali</h2>
+				<h2 id="_principi_architetturali">4. Principi Architetturali</h2>
 				<div class="sectionbody">
 					<div class="ulist">
 						<ul>
 							<li>
-								<p>Determinismo: stessa input source produce stessa timeline.</p>
+								<p>
+									<strong>Determinismo:</strong> L&#8217;esecuzione di uno stesso sorgente produce
+									una sequenza identica e riproducibile di passi e istantanee.
+								</p>
 							</li>
 							<li>
-								<p>Tracciabilita: ogni passo ha regola esplicita.</p>
+								<p>
+									<strong>Tracciabilità:</strong> Ogni riscrittura dell&#8217;AST è accompagnata da
+									una stringa descrittiva esplicita della regola applicata.
+								</p>
 							</li>
 							<li>
-								<p>Isolamento: parser, stepper e formatter testabili separatamente.</p>
+								<p>
+									<strong>Isolamento dei Moduli:</strong> Lexer, Parser, Stepper, Ambienti e
+									Formatter sono disaccoppiati e testati in modo indipendente.
+								</p>
 							</li>
 							<li>
-								<p>Componibilita: formatter consuma solo oggetti stepper, non dettagli UI.</p>
+								<p>
+									<strong>Type Safety:</strong> Uso rigoroso di tipi TypeScript per valori
+									(<code>ValoreScheme</code>), nodi AST e stati dell&#8217;ambiente.
+								</p>
 							</li>
 						</ul>
 					</div>
@@ -2189,7 +2400,7 @@
 			</div>
 		</div>
 		<div id="footer">
-			<div id="footer-text">Last updated 2026-08-04 08:48:20 +0200</div>
+			<div id="footer-text">Last updated 2026-08-15 15:36:04 +0200</div>
 		</div>
 	</body>
 </html>

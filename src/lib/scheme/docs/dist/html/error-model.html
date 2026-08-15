@@ -2025,141 +2025,268 @@
 			}
 		</style>
 	</head>
-	<body class="article">
+	<body class="article toc2 toc-left">
 		<div id="header">
 			<h1>Error Model</h1>
-			<div id="toc" class="toc">
+			<div id="toc" class="toc2">
 				<div id="toctitle">Table of Contents</div>
 				<ul class="sectlevel1">
-					<li><a href="#_scopo">Scopo</a></li>
+					<li><a href="#_scopo">1. Scopo</a></li>
 					<li>
-						<a href="#_categorie">Categorie</a>
+						<a href="#_categorie_di_errore">2. Categorie di Errore</a>
 						<ul class="sectlevel2">
-							<li><a href="#_syntax_error">SYNTAX_ERROR</a></li>
-							<li><a href="#_semantic_error">SEMANTIC_ERROR</a></li>
-							<li><a href="#_execution_limit">EXECUTION_LIMIT</a></li>
+							<li>
+								<a href="#_1_syntax_error_errori_sintattici"
+									>2.1. 1. <code>SYNTAX_ERROR</code> (Errori Sintattici)</a
+								>
+							</li>
+							<li>
+								<a href="#_2_undefined_symbol_simbolo_non_definito"
+									>2.2. 2. <code>UNDEFINED_SYMBOL</code> (Simbolo Non Definito)</a
+								>
+							</li>
+							<li>
+								<a href="#_3_arity_mismatch_mismatch_numero_argomenti"
+									>2.3. 3. <code>ARITY_MISMATCH</code> (Mismatch Numero Argomenti)</a
+								>
+							</li>
+							<li>
+								<a href="#_4_type_error_errore_di_tipo_runtime"
+									>2.4. 4. <code>TYPE_ERROR</code> (Errore di Tipo Runtime)</a
+								>
+							</li>
+							<li>
+								<a href="#_5_environment_not_found_profilo_ambiente_inesistente"
+									>2.5. 5. <code>ENVIRONMENT_NOT_FOUND</code> (Profilo Ambiente Inesistente)</a
+								>
+							</li>
+							<li>
+								<a href="#_6_execution_limit_superamento_limite_passi"
+									>2.6. 6. <code>EXECUTION_LIMIT</code> (Superamento Limite Passi)</a
+								>
+							</li>
 						</ul>
 					</li>
-					<li><a href="#_payload_standard_suggerito">Payload standard suggerito</a></li>
-					<li><a href="#_mapping_pratico">Mapping pratico</a></li>
+					<li>
+						<a href="#_mapping_dto_suggerito_per_frontend_web_ui"
+							>3. Mapping DTO suggerito per Frontend / Web UI</a
+						>
+					</li>
 				</ul>
 			</div>
 		</div>
 		<div id="content">
 			<div class="sect1">
-				<h2 id="_scopo">Scopo</h2>
+				<h2 id="_scopo">1. Scopo</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
-						<p>Uniformare errori parser/stepper in un modello coerente per logging e UI.</p>
+						<p>
+							Uniformare la classificazione, il formato ed il trattamento degli errori generati
+							dall&#8217;interprete Scheme (<code>ParserScheme</code>, <code>StepperScheme</code>,
+							<code>Ambiente</code>), facilitando il logging ed il rendering strutturato dei
+							messaggi di errore nella UI web.
+						</p>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_categorie">Categorie</h2>
+				<h2 id="_categorie_di_errore">2. Categorie di Errore</h2>
 				<div class="sectionbody">
 					<div class="sect2">
-						<h3 id="_syntax_error">SYNTAX_ERROR</h3>
+						<h3 id="_1_syntax_error_errori_sintattici">
+							2.1. 1. <code>SYNTAX_ERROR</code> (Errori Sintattici)
+						</h3>
 						<div class="paragraph">
-							<p>Origine: parser.</p>
+							<p>
+								<strong>Origine:</strong>
+								<code>ParserScheme</code> (<code>src/lib/scheme/ast/parser.ts</code>)
+							</p>
 						</div>
 						<div class="paragraph">
-							<p>Esempi:</p>
+							<p>
+								Lanciati come istanze di <code>SyntaxError</code> quando il codice sorgente viola le
+								regole grammaticali EBNF.
+							</p>
 						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>parentesi mancante</p>
-								</li>
-								<li>
-									<p>token inatteso</p>
-								</li>
-								<li>
-									<p>forma speciale incompleta</p>
-								</li>
-							</ul>
+						<div class="paragraph">
+							<p>
+								<strong>Formato del messaggio:</strong>
+								<code
+									>SyntaxError: &lt;messaggio&gt;. Token corrente: &lt;valore&gt;
+									(&lt;tipo&gt;).</code
+								>
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								<strong>Esempi:</strong> - Parentesi aperta o chiusa mancante (<code
+									>"Attesa parentesi chiusa&#8230;&#8203;"</code
+								>). - Nome non simbolico in <code>define</code> (<code
+									>"Il nome in define deve essere un simbolo."</code
+								>). - Parametri <code>lambda</code> non validi (<code
+									>"I parametri lambda devono essere simboli."</code
+								>). - Corpo <code>lambda</code> vuoto (<code
+									>"Il corpo lambda non puo essere vuoto."</code
+								>). - Clausola <code>cond</code> senza conseguente (<code
+									>"Ogni clausola cond deve avere almeno un conseguente."</code
+								>).
+							</p>
 						</div>
 					</div>
 					<div class="sect2">
-						<h3 id="_semantic_error">SEMANTIC_ERROR</h3>
+						<h3 id="_2_undefined_symbol_simbolo_non_definito">
+							2.2. 2. <code>UNDEFINED_SYMBOL</code> (Simbolo Non Definito)
+						</h3>
 						<div class="paragraph">
-							<p>Origine: stepper/runtime.</p>
+							<p>
+								<strong>Origine:</strong>
+								<code>Ambiente.applica</code> (<code>src/lib/scheme/runtime/ambiente.ts</code>)
+							</p>
 						</div>
 						<div class="paragraph">
-							<p>Esempi:</p>
+							<p>
+								Lanciato come <code>Error</code> standard quando lo stepper tenta di valutare o
+								applicare un identificatore non presente nell&#8217;ambiente locale o nei relativi
+								genitori.
+							</p>
 						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>simbolo non risolvibile</p>
-								</li>
-								<li>
-									<p>applicazione non valida</p>
-								</li>
-								<li>
-									<p>clausola cond non valida</p>
-								</li>
-							</ul>
+						<div class="paragraph">
+							<p>
+								<strong>Formato del messaggio:</strong>
+								<code>Errore di Runtime: Simbolo '&lt;simbolo&gt;' non definito nello scope.</code>
+							</p>
 						</div>
 					</div>
 					<div class="sect2">
-						<h3 id="_execution_limit">EXECUTION_LIMIT</h3>
+						<h3 id="_3_arity_mismatch_mismatch_numero_argomenti">
+							2.3. 3. <code>ARITY_MISMATCH</code> (Mismatch Numero Argomenti)
+						</h3>
 						<div class="paragraph">
-							<p>Origine: stepper.</p>
+							<p>
+								<strong>Origine:</strong> <code>StepperScheme.istanziaCorpoChiusura</code> /
+								Primitive native (<code>src/lib/scheme/runtime/stepper.ts</code>)
+							</p>
 						</div>
 						<div class="paragraph">
-							<p>Esempio:</p>
+							<p>
+								Lanciato quando il numero di argomenti forniti in un&#8217;applicazione non
+								corrisponde al numero dei parametri formali dichiarati dalla chiusura o richiesti
+								dalla funzione primitiva.
+							</p>
 						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>superato limite maxPassi</p>
-								</li>
-							</ul>
+						<div class="paragraph">
+							<p>
+								<strong>Formato del messaggio:</strong>
+								<code>Arity mismatch: attesi &lt;N&gt; argomenti, ricevuti &lt;M&gt;.</code>
+							</p>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_4_type_error_errore_di_tipo_runtime">
+							2.4. 4. <code>TYPE_ERROR</code> (Errore di Tipo Runtime)
+						</h3>
+						<div class="paragraph">
+							<p>
+								<strong>Origine:</strong> Primitive d&#8217;ambiente
+								(<code>ambienteStandard.ts</code>, <code>ambientePerDivisione.ts</code>, ecc.)
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								Lanciato quando l&#8217;argomento passato a una primitiva non soddisfa il tipo
+								atteso (es. operazione aritmetica su stringhe o navigazione di liste su non-liste).
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								<strong>Esempi:</strong> -
+								<code>'&lt;operatore&gt;' richiede argomenti numerici.</code> -
+								<code>'primo' richiede una lista non vuota.</code> -
+								<code>La condizione di 'if/se' non si riduce a un booleano.</code>
+							</p>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_5_environment_not_found_profilo_ambiente_inesistente">
+							2.5. 5. <code>ENVIRONMENT_NOT_FOUND</code> (Profilo Ambiente Inesistente)
+						</h3>
+						<div class="paragraph">
+							<p>
+								<strong>Origine:</strong>
+								<code>creaAmbiente</code> (<code>src/lib/scheme/runtime/registroAmbienti.ts</code>)
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								Lanciato come istanza della classe personalizzata
+								<code>AmbienteNonTrovatoError</code>.
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								<strong>Formato del messaggio:</strong>
+								<code
+									>Ambiente con id "&lt;idAmbiente&gt;" non trovato tra i profili predefiniti.</code
+								>
+							</p>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_6_execution_limit_superamento_limite_passi">
+							2.6. 6. <code>EXECUTION_LIMIT</code> (Superamento Limite Passi)
+						</h3>
+						<div class="paragraph">
+							<p>
+								<strong>Origine:</strong> <code>StepperScheme.passiDaSorgente</code> /
+								<code>passiStream</code> (<code>src/lib/scheme/runtime/stepper.ts</code>)
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								Lanciato per prevenire cicli infiniti durante la riduzione di ricorsioni non
+								terminanti.
+							</p>
+						</div>
+						<div class="paragraph">
+							<p>
+								<strong>Formato del messaggio:</strong>
+								<code>Limite massimo di &lt;maxPassi&gt; passi raggiunto.</code>
+							</p>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_payload_standard_suggerito">Payload standard suggerito</h2>
+				<h2 id="_mapping_dto_suggerito_per_frontend_web_ui">
+					3. Mapping DTO suggerito per Frontend / Web UI
+				</h2>
 				<div class="sectionbody">
 					<div class="listingblock">
 						<div class="content">
 							<pre
 								class="highlight"
-							><code class="language-typescript" data-lang="typescript">interface EngineError {
-  code: 'SYNTAX_ERROR' | 'SEMANTIC_ERROR' | 'EXECUTION_LIMIT' | 'INTERNAL_ERROR';
-  message: string;
-  details?: string;
-  stepIndex?: number;
+							><code class="language-typescript" data-lang="typescript">export type CodiceErroreScheme =
+  | 'SYNTAX_ERROR'
+  | 'UNDEFINED_SYMBOL'
+  | 'ARITY_MISMATCH'
+  | 'TYPE_ERROR'
+  | 'ENVIRONMENT_NOT_FOUND'
+  | 'EXECUTION_LIMIT'
+  | 'INTERNAL_ERROR';
+
+export interface ErroreInterpreteDTO {
+  codice: CodiceErroreScheme;
+  messaggio: string;
+  dettagli?: string;
+  passoCorrente?: number;
 }</code></pre>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div class="sect1">
-				<h2 id="_mapping_pratico">Mapping pratico</h2>
-				<div class="sectionbody">
-					<div class="ulist">
-						<ul>
-							<li>
-								<p>Error parser &#8594; SYNTAX_ERROR</p>
-							</li>
-							<li>
-								<p>Error da maxPassi &#8594; EXECUTION_LIMIT</p>
-							</li>
-							<li>
-								<p>Error di lookup/applicazione runtime &#8594; SEMANTIC_ERROR</p>
-							</li>
-							<li>
-								<p>Error non classificati &#8594; INTERNAL_ERROR</p>
-							</li>
-						</ul>
-					</div>
-				</div>
-			</div>
 		</div>
 		<div id="footer">
-			<div id="footer-text">Last updated 2026-08-04 08:48:28 +0200</div>
+			<div id="footer-text">Last updated 2026-08-15 15:36:11 +0200</div>
 		</div>
 	</body>
 </html>

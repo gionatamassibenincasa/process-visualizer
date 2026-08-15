@@ -24,7 +24,7 @@ import { Ambiente } from '../runtime/ambiente';
 import type { ValoreScheme } from '../runtime/valori';
 import type { PassoStepping } from '../runtime/stepper';
 
-type OutputFormat = 'text' | 'json';
+type OutputFormat = 'text' | 'json' | 'slidev';
 
 /**
  * Opzioni di configurazione parsate dagli argomenti della riga di comando.
@@ -79,6 +79,11 @@ function parseArgs(argv: string[]): CLIOptions {
 
 		if (arg === '--json') {
 			format = 'json';
+			continue;
+		}
+
+		if (arg === '--slidev') {
+			format = 'slidev';
 			continue;
 		}
 
@@ -187,6 +192,11 @@ export function eseguiStepperDaFile(options: CLIOptions): string {
 		};
 
 		return JSON.stringify(payload, null, 2);
+	}
+
+	if (options.format === 'slidev') {
+		const nomeFile = path.basename(options.filePath);
+		return formatter.formattaTimelineSlidev(passi, `Esecuzione Scheme: ${nomeFile}`);
 	}
 
 	return formatter.formattaTimelineTestuale(passi);

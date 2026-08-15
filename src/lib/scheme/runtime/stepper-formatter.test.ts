@@ -60,4 +60,22 @@ describe('Formatter + Stepper', () => {
 		expect(traccia).toContain('==>');
 		expect(traccia).toContain('TERMINATO');
 	});
+
+	test('esporta la timeline in formato Markdown compatibile con Slidev (sli.dev)', () => {
+		const env = creaAmbiente();
+		const stepper = new StepperScheme(env);
+		const formatter = new FormatterScheme();
+
+		const passi = stepper.passiDaSorgente('(define x 10) (+ x 5)', 20);
+		const markdownSlidev = formatter.formattaTimelineSlidev(passi, 'Dimostrazione Somma');
+
+		expect(markdownSlidev).toContain('theme: default');
+		expect(markdownSlidev).toContain('title: "Dimostrazione Somma"');
+		expect(markdownSlidev).toContain('# Dimostrazione Somma');
+		expect(markdownSlidev).toContain('---');
+		expect(markdownSlidev).toContain('```scheme');
+		expect(markdownSlidev).toContain('> **Regola applicata:**');
+		expect(markdownSlidev).toContain('```yaml');
+		expect(markdownSlidev).toContain('x: 10');
+	});
 });

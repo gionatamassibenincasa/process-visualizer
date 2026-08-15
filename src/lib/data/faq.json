@@ -1,0 +1,777 @@
+{
+	"version": "1.0.0",
+	"title": "Guida e Documentazione Scheme",
+	"subtitle": "Domande frequenti, semantica operativa, sintassi EBNF ed esempi interattivi",
+	"sezioni": [
+		{
+			"id": "ambienti-e-struttura",
+			"titolo": "Ambiente e Struttura del Programma",
+			"icona": "layers",
+			"descrizione": "Come è strutturato un file Scheme, il concetto di ambiente lessicale e la direttiva di prima riga.",
+			"items": [
+				{
+					"id": "direttiva-ambiente",
+					"domanda": "Perché leggo '; ambiente: <nome-ambiente>' nella prima riga di alcuni programmi?",
+					"risposta": "È una direttiva speciale sotto forma di commento che, se scritta nella prima riga, indica al motore in quale 'ambiente' valutare il programma. Deve essere esattamente nella forma `; ambiente: <nome-ambiente>`, dove `<nome-ambiente>` è uno dei profili registrati: `standard`, `minimo-numeri-naturali`, `nat-add-sot-min`, ecc.",
+					"ebnf": "Ambiente        ::= \"standard\" | \"minimo-numeri-naturali\" | \"nat-add-sot-min\"",
+					"esempio": [
+						{
+							"titolo": "Dichiarazione dell'ambiente minimo",
+							"tipo": "codice",
+							"contenuto": "; ambiente: minimo-numeri-naturali\n; In questo ambiente sono disponibili solo le primitive di base:\n; zero? (predicato), s (successore), p (precedente)\n(s (s 0)) ; restituisce 2"
+						}
+					],
+					"tag": ["ambiente", "direttive", "configurazione"]
+				},
+				{
+					"id": "cose-ambiente",
+					"domanda": "Cos'è l'Ambiente in Scheme?",
+					"risposta": "L'ambiente è una struttura a dizionari gerarchici (scope) che associa nomi di identificatori ai rispettivi valori (costanti o funzioni). Quando il codice viene valutato, l'interprete cerca le variabili risalendo la catena degli scope dall'ambiente locale a quello globale.",
+					"ebnf": "Ambiente        ::= ScopeLocale* ScopeGlobale\nBinding         ::= Identificatore \"->\" ValoreScheme",
+					"esempio": [
+						{
+							"titolo": "Valutazione nell'ambiente standard",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(+ 1 2) ; restituisce 3 perché l'ambiente standard include la primitiva '+'"
+						}
+					],
+					"tag": ["ambiente", "runtime", "scope"]
+				},
+				{
+					"id": "commenti",
+					"domanda": "Come funzionano i commenti nel codice?",
+					"risposta": "Qualsiasi testo che segue un punto e virgola `;` fino alla fine della riga corrente è considerato un commento. I commenti (a eccezione dell'eventuale direttiva di ambiente sulla prima riga) vengono ignorati dal parser e servono per documentare il codice.",
+					"ebnf": "Commento        ::= \";\" [^\\n]*",
+					"esempio": [
+						{
+							"titolo": "Commenti su riga singola e inline",
+							"tipo": "codice",
+							"contenuto": "; Questo è un commento a riga intera\n(definisci x 42) ; Questo è un commento a fine riga\nx"
+						}
+					],
+					"tag": ["commenti", "sintassi"]
+				},
+				{
+					"id": "struttura-programma",
+					"domanda": "Cos'è un Programma in Scheme?",
+					"risposta": "Un programma in Scheme è una sequenza ordinata (eventualmente vuota) di forme sintattiche (`Forma*`). Ogni forma può essere una definizione (`Definizione`) oppure un'espressione da valutare (`Espressione`). Lo stepper valuta le forme una alla volta da sinistra a destra.",
+					"ebnf": "Programma       ::= Forma*\nForma           ::= Definizione | Espressione",
+					"esempio": [
+						{
+							"titolo": "Programma con definizioni ed espressione finale",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci raggio 5)\n(definisci pi 3)\n(* pi (* raggio raggio)) ; Valuta l'area del cerchio: 75"
+						}
+					],
+					"tag": ["programma", "ast", "top-level"]
+				},
+				{
+					"id": "profili-ambienti-supportati",
+					"domanda": "Quali ambienti predefiniti sono disponibili?",
+					"risposta": "Il sistema include profili con gradi diversi di primitive:\n1. `standard`: supporta tutte le primitive tipiche (aritmetica completa, `cons`, `car`, `cdr`, `null?`, `eq?`, `atomo?`, ecc.) e i rispettivi alias italiani (`primo`, `resto`, `costruisci`, `vuoto?`, `uguale?`).\n2. `minimo-numeri-naturali`: fornisce solo l'aritmetica di Peano con `zero?`, `s` (successore), `p` (precedente).\n3. `nat-add-sot-min`: estende i naturali con somma, sottrazione e confronto minore.",
+					"ebnf": "ProfiloAmbiente ::= \"standard\" | \"minimo-numeri-naturali\" | \"nat-add-sot-min\"",
+					"esempio": [
+						{
+							"titolo": "Uso degli alias italiani nell'ambiente standard",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci l (costruisci 10 (costruisci 20 '())))\n(primo l) ; restituisce 10\n(resto l) ; restituisce (20)"
+						}
+					],
+					"tag": ["ambiente", "primitive", "italiano"]
+				}
+			]
+		},
+		{
+			"id": "sintassi-base-e-atomi",
+			"titolo": "Sintassi di Base, Variabili e Atomi",
+			"icona": "code",
+			"descrizione": "Identificatori, definizioni di variabili, atomi costanti, booleani, numeri e stringhe.",
+			"items": [
+				{
+					"id": "definizione-variabili",
+					"domanda": "Cos'è una variabile e come si definisce?",
+					"risposta": "Una variabile è un identificatore che associa un nome a un valore all'interno dell'ambiente corrente. Si crea usando la forma di definizione `(definisci <variabile> <espressione>)` o l'equivalente standard `(define <variabile> <espressione>)`.",
+					"ebnf": "Definizione      ::= \"(\" KwDefine Variabile Espressione \")\"\nKwDefine         ::= \"define\" | \"definisci\"\nVariabile        ::= Identificatore",
+					"esempio": [
+						{
+							"titolo": "Definizione di variabile",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci limite 100)\n(define totale 0)"
+						}
+					],
+					"tag": ["variabili", "define", "definisci"]
+				},
+				{
+					"id": "identificatori-caratteri",
+					"domanda": "Quali caratteri possiamo usare per formare un Identificatore?",
+					"risposta": "Un identificatore è un nome valido per variabili o funzioni. In Scheme le regole sono molto flessibili: puoi usare lettere, cifre e simboli speciali come `?`, `-`, `!`, `>`, `<`, `=`, `*`, consentendo di dare nomi espressivi e convenzionali (ad esempio `zero?`, `pari?` o `incrementa!`).",
+					"ebnf": "Identificatore   ::= Iniziale Successivo* | \"+\" | \"-\" | \"...\"\nIniziale         ::= Lettera | \"!\" | \"$\" | \"%\" | \"&\" | \"*\" | \"/\" | \":\" | \"<\" | \"=\" | \">\" | \"?\" | \"~\" | \"_\" | \"^\"\nSuccessivo       ::= Iniziale | Cifra | \".\" | \"+\" | \"-\"",
+					"esempio": [
+						{
+							"titolo": "Identificatori validi ed espressivi",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci numero-elementi 5)\n(definisci attivo? #vero)\n(definisci conta->stringa (lambda (n) \"risultato\"))"
+						}
+					],
+					"tag": ["identificatori", "lessico", "convenzioni"]
+				},
+				{
+					"id": "costanti-e-atomi",
+					"domanda": "Cos'è una Costante o Atomo?",
+					"risposta": "Una costante è un'espressione elementare che valuta direttamente se stessa. In Scheme, le costanti coincidono con gli atomi: booleani, numeri, stringhe o simboli. Sono i mattoni indivisibili su cui si costruiscono tutti i dati.",
+					"ebnf": "Costante         ::= Atomo\nAtomo            ::= Booleano | Numero | Stringa | Simbolo",
+					"esempio": [
+						{
+							"titolo": "Esempi di Atomi",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n42          ; Atomo Numero\n\"Scheme\"    ; Atomo Stringa\n#vero       ; Atomo Booleano"
+						}
+					],
+					"tag": ["atomo", "costanti", "tipi"]
+				},
+				{
+					"id": "valori-booleani",
+					"domanda": "Come si rappresentano i valori di verità (Booleani)?",
+					"risposta": "I booleani rappresentano la verità o la falsità. Il linguaggio supporta sia le forme sintattiche tradizionali inglesi (`#t`, `#f`, `#true`, `#false`) sia le abbreviazioni/traduzioni italiane (`#vero`, `#falso`).",
+					"ebnf": "Booleano         ::= \"#t\" | \"#f\" | \"#true\" | \"#false\" | \"#vero\" | \"#falso\"",
+					"esempio": [
+						{
+							"titolo": "Sintassi Booleana",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci verificato #vero)\n(definisci terminato #falso)"
+						}
+					],
+					"tag": ["booleani", "valori", "costanti"]
+				},
+				{
+					"id": "valutazione-booleani",
+					"domanda": "Cosa restituisce l'interprete quando valuta un Booleano?",
+					"risposta": "Un booleano è una costante autovalutante: quando l'interprete lo incontra, il suo valore è il booleano stesso. Non richiede alcuna ricerca nell'ambiente o ulteriore elaborazione.",
+					"ebnf": "Espressione      ::= Costante\nCostante         ::= Atomo\nAtomo            ::= Booleano",
+					"esempio": [
+						{
+							"titolo": "Valutazione di un Booleano",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n#vero   ; restituisce #vero\n#falso  ; restituisce #falso"
+						}
+					],
+					"tag": ["booleani", "valutazione", "semantica"]
+				},
+				{
+					"id": "rappresentazione-numeri",
+					"domanda": "Come vengono formati ed espressi i Numeri?",
+					"risposta": "Un numero è un atomo composto da una sequenza di cifre in base 10, opzionalmente preceduta da un segno positivo `+` o negativo `-`. Negli ambienti numerici di base (come `minimo-numeri-naturali`), rappresenta i numeri interi o naturali.",
+					"ebnf": "Numero           ::= [\"-\"|\"+\"] Cifra+\nCifra            ::= \"0\"..\"9\"",
+					"esempio": [
+						{
+							"titolo": "Rappresentazione dei Numeri",
+							"tipo": "codice",
+							"contenuto": "; ambiente: minimo-numeri-naturali\n0\n+42\n-7"
+						}
+					],
+					"tag": ["numeri", "atomi", "sintassi"]
+				},
+				{
+					"id": "valutazione-variabile",
+					"domanda": "Come valuta l'interprete una Variabile?",
+					"risposta": "Quando l'interprete valuta un identificatore usato come variabile, cerca il suo nome nell'ambiente corrente e restituisce il valore a esso associato. Se il nome non è presente nell'ambiente, viene generato un errore di runtime (Undefined Symbol).",
+					"ebnf": "Espressione      ::= Variabile\nVariabile        ::= Identificatore",
+					"esempio": [
+						{
+							"titolo": "Lookup nell'ambiente",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci x 10)\nx ; L'interprete cerca 'x' nell'ambiente e restituisce 10"
+						}
+					],
+					"tag": ["variabili", "lookup", "ambiente"]
+				}
+			]
+		},
+		{
+			"id": "dati-liste-e-citazioni",
+			"titolo": "Dati, Liste e Citazioni (Quote)",
+			"icona": "list",
+			"descrizione": "Costruzione di liste, coppie puntate (cons cells), datum letterali e citazioni con quote.",
+			"items": [
+				{
+					"id": "cose-una-lista",
+					"domanda": "Cos'è una Lista sintatticamente?",
+					"risposta": "Una lista è una struttura composta racchiusa tra parentesi tonde `(...)` che contiene una sequenza di zero o più dati (`Datum`). Può essere vuota `'()` o contenere elementi eterogenei (atomi, altre liste o coppie).",
+					"ebnf": "Lista            ::= \"(\" Datum* \")\"",
+					"esempio": [
+						{
+							"titolo": "Esempi di Liste",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n'()             ; Lista vuota\n'(1 2 3)        ; Lista di tre numeri\n'(#vero \"ciao\") ; Lista di booleano e stringa"
+						}
+					],
+					"tag": ["liste", "datum", "sintassi"]
+				},
+				{
+					"id": "concetto-datum",
+					"domanda": "In che modo il concetto di Datum unifica Atomi e Liste?",
+					"risposta": "Un *Datum* è la categoria sintattica generale per qualsiasi elemento di dato del linguaggio. Può essere sia un atomo indivisibile (numero, booleano, stringa, simbolo) sia una struttura aggregata (lista, coppia puntata o abbreviazione).",
+					"ebnf": "Datum            ::= Atomo | Lista | CoppiaPuntata | Abbreviazione",
+					"esempio": [
+						{
+							"titolo": "Datum Atomici vs Strutturati",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n'simbolo        ; Datum che è un Atomo (Simbolo)\n'(1 (2) 3)      ; Datum che è una Lista contenente un'altra Lista"
+						}
+					],
+					"tag": ["datum", "atomo", "liste"]
+				},
+				{
+					"id": "citazione-quote",
+					"domanda": "Cosa fa la forma di Citazione ('quote' o apostrofo ')?",
+					"risposta": "La forma di citazione `(quote <datum>)`, `(cita <datum>)` o la sintassi abbreviata `'<datum>` blocca la valutazione dell'argomento. Dice all'interprete di trattare il testo seguente come dato letterale, preservando simboli e liste senza tentare di eseguirli come funzioni o cercarli nell'ambiente.",
+					"ebnf": "Citazione        ::= \"(\" KwQuote Datum \")\" | \"'\" Datum\nKwQuote          ::= \"quote\" | \"cita\"",
+					"esempio": [
+						{
+							"titolo": "Uso di quote e dell'abbreviazione con apostrofo",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(cita (1 2 3))  ; produce la lista letterale (1 2 3)\n'(+ 1 2)        ; produce la lista di 3 elementi contenente il simbolo + e i numeri 1 e 2, senza sommarli"
+						}
+					],
+					"tag": ["quote", "citazione", "abbreviazione"]
+				},
+				{
+					"id": "coppia-puntata",
+					"domanda": "Cos'è una Coppia Puntata (Dotted Pair)?",
+					"risposta": "Una coppia puntata `(a . b)` è la cons-cell fondamentale di Scheme. Consiste di due elementi: il `primo` (`car`) e il `resto` (`cdr`). Se il secondo elemento non è una lista né `'()`, la coppia viene rappresentata con il punto separatore.",
+					"ebnf": "CoppiaPuntata    ::= \"(\" Datum+ \".\" Datum \")\"",
+					"esempio": [
+						{
+							"titolo": "Coppia puntata vs Lista propria",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n'(1 . 2)        ; Coppia con car=1 e cdr=2 (non è una lista propria)\n(cons 1 2)      ; produce (1 . 2)\n(cons 1 '(2))   ; produce la lista propria (1 2)"
+						}
+					],
+					"tag": ["coppia", "cons", "dotted-pair"]
+				},
+				{
+					"id": "ispezione-coppie-puntate",
+					"domanda": "Come gestisce la ricorsione le Coppie Puntate?",
+					"risposta": "In una coppia puntata `(a . b)`, il `cdr` non è una lista né la lista vuota `'()`, ma un atomo. Le funzioni ricorsive devono usare il predicato `coppia?` per fermarsi prima di tentare un `cdr` su un valore non strutturato a lista.",
+					"ebnf": "CoppiaPuntata    ::= \"(\" Datum+ \".\" Datum \")\"",
+					"esempio": [
+						{
+							"titolo": "Ispezione ricorsiva di coppie puntate",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci conta-coppia\n  (lambda (p)\n    (cond\n      ((non (coppia? p)) 1)\n      (altrimenti (+ (conta-coppia (car p))\n                     (conta-coppia (cdr p)))))))\n\n(conta-coppia '(1 . 2)) ; restituisce 2"
+						}
+					],
+					"tag": ["coppia", "ricorsione", "predicati"]
+				}
+			]
+		},
+		{
+			"id": "forme-di-controllo",
+			"titolo": "Forme di Controllo e Condizionali",
+			"icona": "git-branch",
+			"descrizione": "I costrutti decisionali di Scheme: if/se, and/e, or/o e cond con clausole else/altrimenti.",
+			"items": [
+				{
+					"id": "forma-if-se",
+					"domanda": "Come funziona la forma condizionale 'if' / 'se'?",
+					"risposta": "La forma `(se <condizione> <ramo-allora> <ramo-altrimenti>?)` o `(if ...)` valuta prima la condizione. Se il valore ottenuto è `#t` (o un qualsiasi valore non falso), restituisce la valutazione del ramo allora; se è `#f`, restituisce la valutazione del ramo altrimenti (oppure `#f` se il ramo è omesso).",
+					"ebnf": "If               ::= \"(\" KwIf Espressione Espressione Espressione? \")\"\nKwIf             ::= \"if\" | \"se\"",
+					"esempio": [
+						{
+							"titolo": "Uso del condizionale se / if",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci assoluto\n  (lambda (n)\n    (se (< n 0)\n        (- 0 n)\n        n)))\n\n(assoluto -15) ; restituisce 15"
+						}
+					],
+					"tag": ["if", "se", "condizionale"]
+				},
+				{
+					"id": "forma-and-e",
+					"domanda": "Come funziona l'operatore logico 'and' / 'e'?",
+					"risposta": "`and` (o `e`) valuta sequenzialmente le espressioni da sinistra a destra con cortocircuito: al primo valore che risulta `#f`, interrompe la valutazione e restituisce immediatamente `#f`. Se tutte le espressioni sono vere, restituisce il valore dell'ultima espressione.",
+					"ebnf": "And              ::= \"(\" KwAnd Espressione* \")\"\nKwAnd            ::= \"and\" | \"e\"",
+					"esempio": [
+						{
+							"titolo": "Cortocircuito logico con 'e' / 'and'",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(e (> 5 0) (< 5 10)) ; restituisce #t\n(e #falsità-mai-raggiunta #t) ; cortocircuita subito su falso"
+						}
+					],
+					"tag": ["and", "e", "logica", "cortocircuito"]
+				},
+				{
+					"id": "forma-or-o",
+					"domanda": "Come funziona l'operatore logico 'or' / 'o'?",
+					"risposta": "`or` (o `o`) valuta sequenzialmente le espressioni da sinistra a destra con cortocircuito: non appena un'espressione valuta a un valore diverso da `#f`, restituisce immediatamente quel valore senza valutare i rami successivi. Se tutte le espressioni sono `#f`, restituisce `#f`.",
+					"ebnf": "Or               ::= \"(\" KwOr Espressione* \")\"\nKwOr             ::= \"or\" | \"o\"",
+					"esempio": [
+						{
+							"titolo": "Cortocircuito disgiuntivo con 'o' / 'or'",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(o (< 10 5) (> 10 5)) ; restituisce #t"
+						}
+					],
+					"tag": ["or", "o", "logica", "cortocircuito"]
+				},
+				{
+					"id": "forma-cond",
+					"domanda": "Come funziona la forma multi-ramo 'cond'?",
+					"risposta": "`cond` valuta una sequenza di clausole `(condizione conseguente...)` una per una. Se la condizione di una clausola valuta a vero (o è la parola chiave `else` / `altrimenti`), restituisce il risultato del conseguente associato e salta tutte le clausole rimanenti.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"\nClausolaCond     ::= \"(\" TestCond Espressione+ \")\"\nTestCond         ::= Espressione | KwElse\nKwElse           ::= \"else\" | \"altrimenti\"",
+					"esempio": [
+						{
+							"titolo": "Classificazione con cond e altrimenti",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci segno\n  (lambda (n)\n    (cond\n      ((< n 0) \"negativo\")\n      ((zero? n) \"zero\")\n      (altrimenti \"positivo\"))))\n\n(segno 42) ; restituisce \"positivo\""
+						}
+					],
+					"tag": ["cond", "else", "altrimenti", "diramazione"]
+				},
+				{
+					"id": "definizioni-locali",
+					"domanda": "Come si usano le definizioni locali all'interno del corpo di una funzione?",
+					"risposta": "In Scheme il *Corpo* di una `lambda` può contenere una o più *Forme*. Possiamo inserire delle `Definizione` (`definisci` / `define`) all'inizio del corpo per dichiarare funzioni ausiliarie o valori intermedi visibili solo dentro il corpo della funzione stessa.",
+					"ebnf": "Corpo            ::= Forma+\nForma            ::= Definizione | Espressione",
+					"esempio": [
+						{
+							"titolo": "Definizione locale nel corpo",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci somma-quadrati\n  (lambda (a b)\n    (definisci q (lambda (x) (* x x))) ; Definizione ausiliaria locale\n    (+ (q a) (q b))))\n\n(somma-quadrati 3 4) ; restituisce 25"
+						}
+					],
+					"tag": ["definizioni-locali", "lambda", "corpo"]
+				}
+			]
+		},
+		{
+			"id": "funzioni-e-lambda",
+			"titolo": "Funzioni, Chiusure e Ordine Superiore",
+			"icona": "cpu",
+			"descrizione": "Creazione di funzioni anonime, chiusure lessicali, funzioni di ordine superiore e currying.",
+			"items": [
+				{
+					"id": "funzioni-primo-ordine",
+					"domanda": "Cosa significa che in Scheme le funzioni sono 'valori di primo ordine'?",
+					"risposta": "Significa che le funzioni (create con `lambda`) hanno lo stesso stato dei dati ordinari: possono essere assegnate a variabili con `definisci`, inserite in liste, passate come argomenti ad altre funzioni e restituite come valori di ritorno.",
+					"ebnf": "Espressione      ::= Costante | Variabile | Citazione | Lambda | If | EspressioneDerivata | Applicazione",
+					"esempio": [
+						{
+							"titolo": "Passaggio di una funzione come argomento",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci applica-due-volte\n  (lambda (f x)\n    (f (f x))))\n\n(definisci raddoppia (lambda (n) (* n 2)))\n(applica-due-volte raddoppia 3) ; restituisce 12"
+						}
+					],
+					"tag": ["lambda", "first-class", "funzioni"]
+				},
+				{
+					"id": "funzioni-ordine-superiore-mappa",
+					"domanda": "Cos'è una funzione di ordine superiore e come si implementa 'mappa'?",
+					"risposta": "Una funzione di ordine superiore è una funzione che accetta un'altra funzione come parametro o ne restituisce una. `mappa` accetta una procedura `f` e una lista `l`, applica `f` a ciascun elemento della lista e ricostruisce la nuova lista con `cons`.",
+					"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"\nApplicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Implementazione di mappa",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci mappa\n  (lambda (f l)\n    (cond\n      ((null? l) '())\n      (altrimenti (cons (f (car l))\n                        (mappa f (cdr l)))))))\n\n(mappa (lambda (x) (* x x)) '(1 2 3 4)) ; restituisce (1 4 9 16)"
+						}
+					],
+					"tag": ["mappa", "higher-order", "astrazioni"]
+				},
+				{
+					"id": "funzione-filtra",
+					"domanda": "Come si scrive una funzione di filtraggio ('filtra') con un predicato?",
+					"risposta": "Si valuta il predicato `(pred (car l))`: se restituisce `#vero` (o truthy), si conserva `(car l)` in testa al risultato della chiamata ricorsiva con `cons`; altrimenti lo si scarta mantenendo solo la ricorsione su `(cdr l)`.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Filtraggio con predicato",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci filtra\n  (lambda (pred l)\n    (cond\n      ((null? l) '())\n      ((pred (car l)) (cons (car l) (filtra pred (cdr l))))\n      (altrimenti (filtra pred (cdr l))))))\n\n(filtra pari? '(1 2 3 4 5 6)) ; restituisce (2 4 6)"
+						}
+					],
+					"tag": ["filtra", "predicati", "liste"]
+				},
+				{
+					"id": "scopo-lessicale-chiusure",
+					"domanda": "Cos'è lo scopo lessicale (lexical scope) e come influisce sulla valutazione delle funzioni?",
+					"risposta": "Lo scopo lessicale garantisce che una funzione mantenga l'accesso alle variabili visibili nell'ambiente in cui è stata *definita* (creazione della chiusura `Chiusura`), indipendentemente dal punto del programma in cui verrà successivamente *invocata*.",
+					"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"",
+					"esempio": [
+						{
+							"titolo": "Chiusura e ambito lessicale",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci fattore 10)\n(definisci moltiplica-per-fattore\n  (lambda (x) (* x fattore)))\n\n(definisci calcola\n  (lambda (fattore x)\n    (moltiplica-per-fattore x))) ; Usa 'fattore' originale (10), non il parametro locale\n\n(calcola 2 5) ; restituisce 50"
+						}
+					],
+					"tag": ["chiusura", "scope-lessicale", "ambiente"]
+				},
+				{
+					"id": "currying-applicazione-parziale",
+					"domanda": "In che modo una lambda può restituire un'altra lambda (Currying / applicazione parziale)?",
+					"risposta": "Poiché le funzioni sono valori di primo ordine, il corpo di una `lambda` può valutare in un'altra `lambda`. La funzione esterna accetta il primo argomento e restituisce una funzione che 'ricorda' tale valore nell'ambiente lessicale e attende il secondo argomento.",
+					"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"",
+					"esempio": [
+						{
+							"titolo": "Currying con lambda annidate",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci somma-curry\n  (lambda (x)\n    (lambda (y)\n      (+ x y))))\n\n(definisci aggiungi-5 (somma-curry 5))\n(aggiungi-5 3) ; restituisce 8"
+						}
+					],
+					"tag": ["currying", "funzioni-annidate", "chiusure"]
+				},
+				{
+					"id": "funzioni-variadiche",
+					"domanda": "Come supporta la grammatica le funzioni con numero variabile di argomenti (funzioni variadiche)?",
+					"risposta": "Nella regola `Parametri ::= Variabile`, se la lista dei parametri non è racchiusa tra parentesi ma è un singolo identificatore, l'interprete raccoglie tutti gli argomenti passati all'applicazione in una singola lista legata a quel nome.",
+					"ebnf": "Parametri        ::= Variabile | \"(\" Variabile* \")\"",
+					"esempio": [
+						{
+							"titolo": "Parametri variadici come lista",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci elenca\n  (lambda argomenti\n    argomenti)) ; 'argomenti' cattura tutti i valori passati in una lista\n\n(elenca 1 2 3) ; restituisce (1 2 3)"
+						}
+					],
+					"tag": ["variadiche", "parametri", "lambda"]
+				},
+				{
+					"id": "ricorsione-anonima-combinatore-y",
+					"domanda": "È possibile scrivere una funzione ricorsiva senza usare 'definisci' per darle un nome?",
+					"risposta": "Sì! Sfruttando il Combinatore Y (o l'auto-applicazione di funzioni lambda), una funzione anonima può passare se stessa a se stessa come argomento, realizzando la ricorsione unicamente mediante `Lambda` e `Applicazione`.",
+					"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"\nApplicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Ricorsione anonima tramite auto-applicazione",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(((lambda (f)\n    (lambda (n)\n      (se (zero? n)\n          1\n          (* n ((f f) (p n))))))\n  (lambda (f)\n    (lambda (n)\n      (se (zero? n)\n          1\n          (* n ((f f) (p n))))))) 5) ; calcola il fattoriale di 5: restituisce 120"
+						}
+					],
+					"tag": ["y-combinator", "lambda-calcolo", "ricorsione-anonima"]
+				}
+			]
+		},
+		{
+			"id": "ricorsione-e-algoritmi",
+			"titolo": "Pattern di Ricorsione e Strutture Dati",
+			"icona": "repeat",
+			"descrizione": "Ricorsione strutturale, liste annidate, alberi, ricorsione in coda, accumulatori, insiemi e fold.",
+			"items": [
+				{
+					"id": "ricorsione-rimuovi",
+					"domanda": "Come si costruisce una funzione ricorsiva con parametri aggiuntivi (ad es. 'rimuovi')?",
+					"risposta": "Si confronta l'elemento cercato con `(car l)`. Se coincidono, si restituisce `(cdr l)` ignorando la testa. Se non coincidono, si conserva `(car l)` in testa ricostruendo la lista con `cons` sulla chiamata ricorsiva a `(cdr l)`.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Rimozione della prima occorrenza",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci rimuovi\n  (lambda (x l)\n    (cond\n      ((null? l) '())\n      ((equal? x (car l)) (cdr l))\n      (altrimenti (cons (car l)\n                        (rimuovi x (cdr l)))))))\n\n(rimuovi 2 '(1 2 3 2 4)) ; restituisce (1 3 2 4)"
+						}
+					],
+					"tag": ["ricorsione", "liste", "cons"]
+				},
+				{
+					"id": "ricorsione-rimuovi-tutti",
+					"domanda": "Qual è la differenza tra rimuovere solo la prima occorrenza e rimuovere tutte le occorrenze ('rimuovi-tutti')?",
+					"risposta": "Quando si trova l'elemento cercato, invece di restituire immediatamente `(cdr l)` interrompendo la ricerca, si continua a richiamare ricorsivamente la funzione su `(cdr l)` per eliminare anche le eventuali occorrenze successive.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Rimozione di tutte le occorrenze",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci rimuovi-tutti\n  (lambda (x l)\n    (cond\n      ((null? l) '())\n      ((equal? x (car l)) (rimuovi-tutti x (cdr l)))\n      (altrimenti (cons (car l)\n                        (rimuovi-tutti x (cdr l)))))))\n\n(rimuovi-tutti 2 '(1 2 3 2 4 2)) ; restituisce (1 3 4)"
+						}
+					],
+					"tag": ["ricorsione", "liste", "rimozione"]
+				},
+				{
+					"id": "liste-annidate",
+					"domanda": "Cosa cambia nella ricorsione quando una lista contiene al suo interno altre liste (liste annidate)?",
+					"risposta": "Nelle liste piatte, `(car l)` è sempre un atomo. Nelle liste annidate, `(car l)` può essere esso stesso una lista. Pertanto, la ricorsione non deve avanzare solo lungo il `cdr`, ma deve poter esplorare anche la struttura interna del `car`.",
+					"ebnf": "Datum            ::= Atomo | Lista | CoppiaPuntata | Abbreviazione",
+					"esempio": [
+						{
+							"titolo": "Lista con liste annidate",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n'(a (b c) d) ; (car l) è l'atomo 'a, ma (car (cdr l)) è la lista '(b c)"
+						}
+					],
+					"tag": ["liste-annidate", "alberi", "strutture"]
+				},
+				{
+					"id": "primo-comandamento-liste-annidate",
+					"domanda": "Come si estende il Primo Comandamento della ricorsione per gestire le liste annidate?",
+					"risposta": "Per le liste annidate occorre porsi tre domande ordinate:\n1) La lista è vuota `(null? l)`?\n2) La testa `(car l)` è un atomo `(atomo? (car l))`?\n3) Altrimenti, la testa è una sottolista: occorre ricorrere sia su `(car l)` che su `(cdr l)`.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Struttura di controllo per liste annidate",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n; Schema generale:\n; (cond\n;   ((null? l) <caso-base>)\n;   ((atomo? (car l)) <elabora-atomo-e-ricorri-su-cdr>)\n;   (altrimenti <ricorri-su-car-e-su-cdr>))"
+						}
+					],
+					"tag": ["comandamenti", "pattern-ricorsivi", "cond"]
+				},
+				{
+					"id": "ricorsione-su-alberi",
+					"domanda": "Cos'è la ricorsione su alberi (o ricorsione doppia) e come si applica a car e cdr?",
+					"risposta": "È un motivo ricorsivo in cui la funzione richiama se stessa due volte nello stesso ramo: una volta sul primo sotto-albero `(car l)` e una volta sul resto dell'albero `(cdr l)`, combinando poi i due risultati (ad esempio con `cons` o `+`).",
+					"ebnf": "Applicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Duplicazione ricorsiva di un albero",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci duplica-albero\n  (lambda (l)\n    (cond\n      ((null? l) '())\n      ((atomo? (car l)) (cons (car l) (duplica-albero (cdr l))))\n      (altrimenti (cons (duplica-albero (car l))\n                        (duplica-albero (cdr l)))))))\n\n(duplica-albero '(a (b c))) ; restituisce (a (b c))"
+						}
+					],
+					"tag": ["alberi", "ricorsione-doppia", "cons"]
+				},
+				{
+					"id": "conta-atomi-albero",
+					"domanda": "Come si implementa il conteggio di tutti gli atomi in una lista annidata ('conta-atomi')?",
+					"risposta": "Si applica la ricorsione su alberi: se la lista è vuota restituisce `0`; se il `car` è un atomo aggiunge `1` al conteggio del `cdr`; altrimenti somma il risultato di `conta-atomi` su `(car l)` con quello su `(cdr l)`.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Conteggio ricorsivo su albero",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci conta-atomi\n  (lambda (l)\n    (cond\n      ((null? l) 0)\n      ((atomo? (car l)) (+ 1 (conta-atomi (cdr l))))\n      (altrimenti (+ (conta-atomi (car l))\n                     (conta-atomi (cdr l)))))))\n\n(conta-atomi '(a (b (c d)) e)) ; restituisce 5"
+						}
+					],
+					"tag": ["alberi", "conteggio", "ricorsione"]
+				},
+				{
+					"id": "appiattisci-liste",
+					"domanda": "Come si trasforma una lista di liste annidate in una lista 'piatta' di soli atomi ('appiattisci')?",
+					"risposta": "Si ricorre sia sul `car` che sul `cdr`. Se la testa `(car l)` è un atomo, la si aggiunge in testa all'appiattimento del `cdr`. Se la testa è una lista, si applica `appiattisci` sia al `car` che al `cdr` fondendo i risultati con `append` (o `concatena`).",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Appiattimento di liste annidate",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci appiattisci\n  (lambda (l)\n    (cond\n      ((null? l) '())\n      ((atomo? (car l)) (cons (car l) (appiattisci (cdr l))))\n      (altrimenti (append (appiattisci (car l))\n                          (appiattisci (cdr l)))))))\n\n(appiattisci '((a b) (c (d e)))) ; restituisce (a b c d e)"
+						}
+					],
+					"tag": ["appiattisci", "flatten", "liste"]
+				},
+				{
+					"id": "ricorsione-in-coda-tail-call",
+					"domanda": "Cos'è la ricorsione in coda (tail recursion) e perché è diversa dalla ricorsione classica?",
+					"risposta": "Nella ricorsione in coda, la chiamata ricorsiva è l'ULTIMA operazione eseguita nel corpo (nessuna operazione rimane in sospeso come `cons` o `+`). Ciò permette all'interprete di riutilizzare lo stesso frame di memoria senza accumulare lo stack di chiamate.",
+					"ebnf": "Applicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Ricorsione in coda con accumulatore",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci lunghezza-coda\n  (lambda (l acc)\n    (cond\n      ((null? l) acc)\n      (altrimenti (lunghezza-coda (cdr l) (+ acc 1))))))\n\n(lunghezza-coda '(10 20 30) 0) ; restituisce 3"
+						}
+					],
+					"tag": ["tail-recursion", "accumulatore", "ottimizzazione"]
+				},
+				{
+					"id": "inversione-accumulatore",
+					"domanda": "Come si usa un accumulatore per invertire una lista in modo efficiente ('inverti')?",
+					"risposta": "Con un accumulatore preleviamo `(car l)` e lo mettiamo in testa all'accumulatore con `(cons (car l) acc)`. Alla fine della lista, l'accumulatore conterrà tutti gli elementi nell'ordine inverso, in tempo lineare $O(n)$.",
+					"ebnf": "Applicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Inversione ricorsiva in coda",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci inverti-aux\n  (lambda (l acc)\n    (se (null? l)\n        acc\n        (inverti-aux (cdr l) (cons (car l) acc)))))\n\n(definisci inverti\n  (lambda (l)\n    (inverti-aux l '())))\n\n(inverti '(1 2 3 4)) ; restituisce (4 3 2 1)"
+						}
+					],
+					"tag": ["inverti", "reverse", "accumulatore"]
+				},
+				{
+					"id": "uguaglianza-profonda",
+					"domanda": "Come si confrontano due strutture dati arbitrarie per verificare se sono identiche ('uguale?')?",
+					"risposta": "Il confronto ricorsivo profondo verifica se: 1) Sono entrambi atomi uguali con `eq?`, 2) Sono entrambe liste vuote, oppure 3) Hanno sia i rispettivi `car` uguali che i rispettivi `cdr` uguali (ricorsione doppia strutturale).",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Uguaglianza strutturale profonda",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci uguale?\n  (lambda (d1 d2)\n    (cond\n      ((e (atomo? d1) (atomo? d2)) (eq? d1 d2))\n      ((o (atomo? d1) (atomo? d2)) #falso)\n      ((e (null? d1) (null? d2)) #vero)\n      ((o (null? d1) (null? d2)) #falso)\n      (altrimenti (e (uguale? (car d1) (car d2))\n                     (uguale? (cdr d1) (cdr d2)))))))\n\n(uguale? '(1 (2 3)) '(1 (2 3))) ; restituisce #vero"
+						}
+					],
+					"tag": ["uguale?", "deep-equal", "strutture"]
+				},
+				{
+					"id": "piega-destra-foldr",
+					"domanda": "Cos'è l'astrazione di ricorsione a destra ('piega-destra' o 'foldr')?",
+					"risposta": "`piega-destra` generalizza lo schema della ricorsione strutturale sulle liste: sostituisce la lista vuota `'()` con un valore iniziale *base*, e sostituisce il costruttore `cons` con una funzione binaria `f` passata come argomento.",
+					"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"",
+					"esempio": [
+						{
+							"titolo": "Incapsulare la ricorsione con piega-destra",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci piega-destra\n  (lambda (f base l)\n    (cond\n      ((null? l) base)\n      (altrimenti (f (car l)\n                     (piega-destra f base (cdr l)))))))\n\n; Sommare gli elementi di una lista\n(piega-destra + 0 '(1 2 3 4)) ; restituisce 10"
+						}
+					],
+					"tag": ["piega-destra", "foldr", "astrazioni"]
+				},
+				{
+					"id": "piega-sinistra-foldl",
+					"domanda": "Qual è la differenza tra 'piega-destra' e 'piega-sinistra' ('foldl')?",
+					"risposta": "`piega-destra` elabora la lista partendo dal fondo verso la testa (accumulando i risultati al rientro dallo stack), mentre `piega-sinistra` elabora gli elementi da sinistra a destra con un accumulatore ed è naturalmente ricorsiva in coda.",
+					"ebnf": "Applicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Piega a sinistra ricorsiva in coda",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci piega-sinistra\n  (lambda (f acc l)\n    (cond\n      ((null? l) acc)\n      (altrimenti (piega-sinistra f\n                                  (f acc (car l))\n                                  (cdr l))))))\n\n(piega-sinistra + 0 '(1 2 3 4)) ; restituisce 10"
+						}
+					],
+					"tag": ["piega-sinistra", "foldl", "accumulatore"]
+				},
+				{
+					"id": "insiemi-predicato",
+					"domanda": "Come si verifica ricorsivamente se una lista rappresenta un Insieme (senza duplicati)?",
+					"risposta": "Un insieme non deve contenere elementi ripetuti. Ricorsivamente: una lista vuota è un insieme; se `(car l)` appartiene al resto della lista `(cdr l)` allora NON è un insieme; altrimenti si controlla se il `(cdr l)` è un insieme.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Predicato insieme?",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci appartiene?\n  (lambda (x l)\n    (cond\n      ((null? l) #falso)\n      ((equal? x (car l)) #vero)\n      (altrimenti (appartiene? x (cdr l))))))\n\n(definisci insieme?\n  (lambda (l)\n    (cond\n      ((null? l) #vero)\n      ((appartiene? (car l) (cdr l)) #falso)\n      (altrimenti (insieme? (cdr l))))))\n\n(insieme? '(1 2 3)) ; restituisce #vero\n(insieme? '(1 2 1)) ; restituisce #falso"
+						}
+					],
+					"tag": ["insiemi", "set", "predicati"]
+				},
+				{
+					"id": "intersezione-insiemi",
+					"domanda": "Come si calcola l'Intersezione tra due insiemi tramite ricorsione?",
+					"risposta": "Si esamina ogni elemento del primo insieme: se fa parte anche del secondo insieme (tramite `appartiene?`), lo si mantiene nel risultato con `cons`; altrimenti lo si scarta, proseguendo ricorsivamente sul resto del primo insieme.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Intersezione di due insiemi",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci intersezione\n  (lambda (s1 s2)\n    (cond\n      ((null? s1) '())\n      ((appartiene? (car s1) s2)\n       (cons (car s1) (intersezione (cdr s1) s2)))\n      (altrimenti (intersezione (cdr s1) s2)))))\n\n(intersezione '(1 2 3) '(2 3 4)) ; restituisce (2 3)"
+						}
+					],
+					"tag": ["intersezione", "insiemi", "ricorsione"]
+				},
+				{
+					"id": "sottoinsieme",
+					"domanda": "Come si verifica se un insieme è un sottoinsieme di un altro ('sottoinsieme?')?",
+					"risposta": "Si usa la ricorsione strutturale sul primo insieme: per ogni suo elemento `(car s1)`, si controlla se appartiene anche al secondo insieme `s2`. Se la verifica passa per tutti gli elementi e si raggiunge il caso base `(null? s1)`, allora `s1` è un sottoinsieme di `s2`.",
+					"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+					"esempio": [
+						{
+							"titolo": "Verifica di sottoinsieme",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci sottoinsieme?\n  (lambda (s1 s2)\n    (cond\n      ((null? s1) #vero)\n      ((appartiene? (car s1) s2) (sottoinsieme? (cdr s1) s2))\n      (altrimenti #falso))))\n\n(sottoinsieme? '(2 3) '(1 2 3 4)) ; restituisce #vero"
+						}
+					],
+					"tag": ["sottoinsieme", "insiemi", "predicati"]
+				},
+				{
+					"id": "lista-associazioni-alist",
+					"domanda": "Cos'è una Lista di Associazioni (A-list) e come si usa per rappresentare un ambiente?",
+					"risposta": "Una A-list è una lista di coppie `((chiave . valore) ...)` dove ogni coppia associa un nome a un dato. È la struttura fondamentale usata dagli interpreti per rappresentare dizionari, frame di memoria e tabelle di simboli.",
+					"ebnf": "CoppiaPuntata    ::= \"(\" Datum+ \".\" Datum \")\"",
+					"esempio": [
+						{
+							"titolo": "Ricerca in una lista di associazioni",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n; Ambiente rappresentato come: '((x . 10) (y . 20))\n(definisci cerca-env\n  (lambda (var env)\n    (cond\n      ((null? env) #falso)\n      ((eq? var (car (car env))) (cdr (car env)))\n      (altrimenti (cerca-env var (cdr env))))))\n\n(cerca-env 'y '((x . 10) (y . 20))) ; restituisce 20"
+						}
+					],
+					"tag": ["a-list", "dizionari", "ambiente"]
+				},
+				{
+					"id": "valutatore-espressioni-aritmetiche",
+					"domanda": "Come si usa la ricorsione su alberi per valutare un'espressione aritmetica in formato prefisso?",
+					"risposta": "Se l'espressione è un numero (atomo), il suo valore è il numero stesso. Altrimenti è una lista il cui primo elemento è l'operatore e i successivi sono i sotto-alberi degli operandi. Si valutano ricorsivamente gli operandi e si applica l'operatore.",
+					"ebnf": "Datum            ::= Atomo | Lista | CoppiaPuntata | Abbreviazione",
+					"esempio": [
+						{
+							"titolo": "Valutatore di espressioni aritmetiche",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci valuta-arit\n  (lambda (e)\n    (cond\n      ((atomo? e) e)\n      ((eq? (car e) '+) (+ (valuta-arit (car (cdr e)))\n                           (valuta-arit (car (cdr (cdr e))))))\n      ((eq? (car e) '*) (* (valuta-arit (car (cdr e)))\n                           (valuta-arit (car (cdr (cdr e)))))))))\n\n(valuta-arit '(+ (* 2 3) 4)) ; restituisce 10"
+						}
+					],
+					"tag": ["interprete-aritmetico", "alberi", "espressioni"]
+				},
+				{
+					"id": "continuation-passing-style-cps",
+					"domanda": "Cos'è lo Stile a Passaggio di Continuazione (CPS - Continuation-Passing Style)?",
+					"risposta": "È una tecnica in cui le funzioni non restituiscono direttamente un valore, ma ricevono un parametro extra: la *continuazione* `k` (una funzione lambda). Quando il risultato è calcolato, viene passato come argomento a `k`, trasformando qualsiasi ricorsione complessa in ricorsione in coda.",
+					"ebnf": "Applicazione     ::= \"(\" Espressione Espressione* \")\"",
+					"esempio": [
+						{
+							"titolo": "Fattoriale in Continuation-Passing Style",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(definisci fattoriale-cps\n  (lambda (n k)\n    (se (zero? n)\n        (k 1)\n        (fattoriale-cps (p n)\n                        (lambda (res) (k (* n res)))))))\n\n(fattoriale-cps 5 (lambda (x) x)) ; restituisce 120"
+						}
+					],
+					"tag": ["cps", "continuazioni", "funzionale-avanzato"]
+				},
+				{
+					"id": "regola-oro-astrazioni",
+					"domanda": "Qual è la regola d'oro per evitare di riscrivere la ricorsione da zero?",
+					"risposta": "Identifica la natura dell'operazione:\n- Per trasformare ogni elemento usa `mappa`.\n- Per selezionare o filtrare usa `filtra`.\n- Per accumulare o combinare usa `piega-destra` o `piega-sinistra`.\nComporre funzioni di ordine superiore rende il codice conciso, leggibile e privo di errori sui casi base.",
+					"ebnf": "Programma        ::= Forma*",
+					"esempio": [
+						{
+							"titolo": "Composizione pulita mediante astrazioni",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n; Somma dei quadrati dei soli numeri pari in una lista:\n(definisci somma-quadrati-pari\n  (lambda (l)\n    (piega-destra + 0\n      (mappa (lambda (x) (* x x))\n             (filtra pari? l)))))\n\n(somma-quadrati-pari '(1 2 3 4)) ; 2^2 + 4^2 = 20"
+						}
+					],
+					"tag": ["astrazioni", "best-practices", "composizione"]
+				}
+			]
+		},
+		{
+			"id": "grammatica-ebnf-e-interprete",
+			"titolo": "Grammatica Formale EBNF ed Interprete",
+			"icona": "book-open",
+			"descrizione": "Specifiche della grammatica formale del linguaggio Scheme, riscrittura AST e funzionamento dello stepper.",
+			"items": [
+				{
+					"id": "principio-isomorfismo-dato-codice",
+					"domanda": "Qual è il principio fondamentale che lega la grammatica dei dati alla struttura del codice?",
+					"risposta": "La forma del codice rispecchia la forma dei dati che elabora: a tipi definiti in modo induttivo o ricorsivo (come i numeri di Peano o le liste a cons-cells) corrispondono funzioni con casi base e chiamate ricorsive che ne ricalcano esattamente i costruttori grammaticali.",
+					"ebnf": "Programma        ::= Forma*\nForma            ::= Definizione | Espressione",
+					"esempio": [
+						{
+							"titolo": "Corrispondenza tra grammatica del dato e funzione",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n; Grammatica Lista: '() OPPURE (primo . resto)\n; Struttura Funzione: (null? l) [caso base] OPPURE elabora (car l) e ricorri su (cdr l)"
+						}
+					],
+					"tag": ["isomorfismo", "grammatica", "struttura"]
+				},
+				{
+					"id": "valutazione-ricorsiva-ast",
+					"domanda": "In che modo l'interprete valuta i programmi mediante l'albero AST?",
+					"risposta": "Poiché il codice Scheme è una struttura ad albero di espressioni simboliche (S-expressions), l'interprete (`StepperScheme`) attraversa ricorsivamente l'AST. Per ciascun nodo analizza il tipo (costante, definizione, condizionale, chiusura lambda o applicazione) e applica la regola di riduzione a piccoli passi (small-step reduction).",
+					"ebnf": "ProgrammaAST     ::= FormaAST*\nFormaAST         ::= DefineAST | AtomoAST | LambdaAST | IfAST | AndAST | OrAST | CondAST | ApplicazioneAST | CitazioneAST",
+					"esempio": [
+						{
+							"titolo": "Schema concettuale del valutatore ad albero",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n; (definisci valuta\n;   (lambda (e env)\n;     (cond\n;       ((atomo? e) (valuta-atomo e env))\n;       ((eq? (car e) 'se) (valuta-se e env))\n;       ((eq? (car e) 'lambda) (crea-chiusura e env))\n;       (altrimenti (valuta-applicazione e env)))))"
+						}
+					],
+					"tag": ["ast", "interprete", "stepper", "small-step"]
+				},
+				{
+					"id": "come-usare-stepper",
+					"domanda": "Come si legge la traccia visuale nello Stepper dell'applicazione?",
+					"risposta": "Il visualizzatore mostra a ogni passo:\n1. **Regola Applicata**: il tipo di riscrittura formale eseguito (es. 'Valutazione Argomento', 'Espansione Lambda', 'Test If').\n2. **Stato Precedente e Successivo**: la trasformazione esatta dell'espressione prima e dopo la riduzione.\n3. **Ambiente e Scope**: i binding attivi in ciascun livello lessicale (variabili globali e locali allocate dai parametri formali).",
+					"ebnf": "SnapshotPasso    ::= { indice, regola, precedente, successivo, ambiente, terminato, haRidotto }",
+					"esempio": [
+						{
+							"titolo": "Esempio traccia di riduzione",
+							"tipo": "codice",
+							"contenuto": "; ambiente: standard\n(+ (* 2 3) 4)\n; Passo 1: (+ 6 4)  [Regola: Riduzione primitiva *]\n; Passo 2: 10        [Regola: Riduzione primitiva +]"
+						}
+					],
+					"tag": ["stepper", "ui", "timeline"]
+				}
+			]
+		}
+	]
+}

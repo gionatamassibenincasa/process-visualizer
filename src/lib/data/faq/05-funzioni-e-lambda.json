@@ -1,0 +1,106 @@
+{
+	"id": "funzioni-e-lambda",
+	"titolo": "Funzioni, Chiusure e Ordine Superiore",
+	"icona": "cpu",
+	"descrizione": "Creazione di funzioni anonime, chiusure lessicali, funzioni di ordine superiore e currying.",
+	"items": [
+		{
+			"id": "funzioni-primo-ordine",
+			"domanda": "Cosa significa che in Scheme le funzioni sono 'valori di primo ordine'?",
+			"risposta": "Significa che le funzioni (create con `lambda`) hanno lo stesso stato dei dati ordinari: possono essere assegnate a variabili con `definisci`, inserite in liste, passate come argomenti ad altre funzioni e restituite come valori di ritorno.",
+			"ebnf": "Espressione      ::= Costante | Variabile | Citazione | Lambda | If | EspressioneDerivata | Applicazione",
+			"esempio": [
+				{
+					"titolo": "Passaggio di una funzione come argomento",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci applica-due-volte\n  (lambda (f x)\n    (f (f x))))\n\n(definisci raddoppia (lambda (n) (* n 2)))\n(applica-due-volte raddoppia 3) ; restituisce 12"
+				}
+			],
+			"tag": ["lambda", "first-class", "funzioni"]
+		},
+		{
+			"id": "funzioni-ordine-superiore-mappa",
+			"domanda": "Cos'è una funzione di ordine superiore e come si implementa 'mappa'?",
+			"risposta": "Una funzione di ordine superiore è una funzione che accetta un'altra funzione come parametro o ne restituisce una. `mappa` accetta una procedura `f` e una lista `l`, applica `f` a ciascun elemento della lista e ricostruisce la nuova lista con `cons`.",
+			"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"\nApplicazione     ::= \"(\" Espressione Espressione* \")\"",
+			"esempio": [
+				{
+					"titolo": "Implementazione di mappa",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci mappa\n  (lambda (f l)\n    (cond\n      ((null? l) '())\n      (altrimenti (cons (f (car l))\n                        (mappa f (cdr l)))))))\n\n(mappa (lambda (x) (* x x)) '(1 2 3 4)) ; restituisce (1 4 9 16)"
+				}
+			],
+			"tag": ["mappa", "higher-order", "astrazioni"]
+		},
+		{
+			"id": "funzione-filtra",
+			"domanda": "Come si scrive una funzione di filtraggio ('filtra') con un predicato?",
+			"risposta": "Si valuta il predicato `(pred (car l))`: se restituisce `#vero` (o truthy), si conserva `(car l)` in testa al risultato della chiamata ricorsiva con `cons`; altrimenti lo si scarta mantenendo solo la ricorsione su `(cdr l)`.",
+			"ebnf": "Cond             ::= \"(\" \"cond\" ClausolaCond+ \")\"",
+			"esempio": [
+				{
+					"titolo": "Filtraggio con predicato",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci filtra\n  (lambda (pred l)\n    (cond\n      ((null? l) '())\n      ((pred (car l)) (cons (car l) (filtra pred (cdr l))))\n      (altrimenti (filtra pred (cdr l))))))\n\n(filtra pari? '(1 2 3 4 5 6)) ; restituisce (2 4 6)"
+				}
+			],
+			"tag": ["filtra", "predicati", "liste"]
+		},
+		{
+			"id": "scopo-lessicale-chiusure",
+			"domanda": "Cos'è lo scopo lessicale (lexical scope) e come influisce sulla valutazione delle funzioni?",
+			"risposta": "Lo scopo lessicale garantisce che una funzione mantenga l'accesso alle variabili visibili nell'ambiente in cui è stata *definita* (creazione della chiusura `Chiusura`), indipendentemente dal punto del programma in cui verrà successivamente *invocata*.",
+			"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"",
+			"esempio": [
+				{
+					"titolo": "Chiusura e ambito lessicale",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci fattore 10)\n(definisci moltiplica-per-fattore\n  (lambda (x) (* x fattore)))\n\n(definisci calcola\n  (lambda (fattore x)\n    (moltiplica-per-fattore x))) ; Usa 'fattore' originale (10), non il parametro locale\n\n(calcola 2 5) ; restituisce 50"
+				}
+			],
+			"tag": ["chiusura", "scope-lessicale", "ambiente"]
+		},
+		{
+			"id": "currying-applicazione-parziale",
+			"domanda": "In che modo una lambda può restituire un'altra lambda (Currying / applicazione parziale)?",
+			"risposta": "Poiché le funzioni sono valori di primo ordine, il corpo di una `lambda` può valutare in un'altra `lambda`. La funzione esterna accetta il primo argomento e restituisce una funzione che 'ricorda' tale valore nell'ambiente lessicale e attende il secondo argomento.",
+			"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"",
+			"esempio": [
+				{
+					"titolo": "Currying con lambda annidate",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci somma-curry\n  (lambda (x)\n    (lambda (y)\n      (+ x y))))\n\n(definisci aggiungi-5 (somma-curry 5))\n(aggiungi-5 3) ; restituisce 8"
+				}
+			],
+			"tag": ["currying", "funzioni-annidate", "chiusure"]
+		},
+		{
+			"id": "funzioni-variadiche",
+			"domanda": "Come supporta la grammatica le funzioni con numero variabile di argomenti (funzioni variadiche)?",
+			"risposta": "Nella regola `Parametri ::= Variabile`, se la lista dei parametri non è racchiusa tra parentesi ma è un singolo identificatore, l'interprete raccoglie tutti gli argomenti passati all'applicazione in una singola lista legata a quel nome.",
+			"ebnf": "Parametri        ::= Variabile | \"(\" Variabile* \")\"",
+			"esempio": [
+				{
+					"titolo": "Parametri variadici come lista",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci elenca\n  (lambda argomenti\n    argomenti)) ; 'argomenti' cattura tutti i valori passati in una lista\n\n(elenca 1 2 3) ; restituisce (1 2 3)"
+				}
+			],
+			"tag": ["variadiche", "parametri", "lambda"]
+		},
+		{
+			"id": "ricorsione-anonima-combinatore-y",
+			"domanda": "È possibile scrivere una funzione ricorsiva senza usare 'definisci' per darle un nome?",
+			"risposta": "Sì! Sfruttando il Combinatore Y (o l'auto-applicazione di funzioni lambda), una funzione anonima può passare se stessa a se stessa come argomento, realizzando la ricorsione unicamente mediante `Lambda` e `Applicazione`.",
+			"ebnf": "Lambda           ::= \"(\" \"lambda\" Parametri Corpo \")\"\nApplicazione     ::= \"(\" Espressione Espressione* \")\"",
+			"esempio": [
+				{
+					"titolo": "Ricorsione anonima tramite auto-applicazione",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(((lambda (f)\n    (lambda (n)\n      (se (zero? n)\n          1\n          (* n ((f f) (p n))))))\n  (lambda (f)\n    (lambda (n)\n      (se (zero? n)\n          1\n          (* n ((f f) (p n))))))) 5) ; calcola il fattoriale di 5: restituisce 120"
+				}
+			],
+			"tag": ["y-combinator", "lambda-calcolo", "ricorsione-anonima"]
+		}
+	]
+}

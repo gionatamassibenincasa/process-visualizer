@@ -1,81 +1,101 @@
 = Web Integration
-:toc:
+:toc: left
+:toclevels: 3
+:sectnums:
 
 == Obiettivo
 
-Integrare parser-stepper-formatter in una UI che mostri la riduzione AST passo-passo.
+Fornire indicazioni e specifiche per integrare la libreria Scheme (`src/lib/scheme`) in una Web Application Svelte/Vite per la visualizzazione interattiva dell'esecuzione e della riduzione dell'AST passo-passo.
 
-== Flusso consigliato
+== Flusso di Esecuzione Consigliato
 
-1. Utente invia sorgente Scheme.
-2. Backend/worker invoca passiDaSorgente.
-3. Formatter converte i passi in snapshot timeline.
-4. UI renderizza stato corrente e regola applicata.
-5. Utente naviga avanti/indietro tra i passi.
+1. L'utente inserisce o seleziona il codice sorgente Scheme nel componente editor (es. CodeMirror).
+2. La Web App rileva l'ambiente dichiarato via direttiva `; ambiente: <id>` oppure usa il profilo scelto dall'utente.
+3. Il worker o la funzione della UI invoca `StepperScheme.daSorgente(sorgente)` ottenendo l'istanza dello stepper.
+4. Per visualizzazione sequenziale completa: invoca `stepper.passiDaSorgente(sorgente, maxPassi)` e formatta con `FormatterScheme.formattaTimelineStepping(passi)`.
+5. Per elaborazioni incrementalmente reattive (es. animazione passo-passo o grandi programmi): usa il generatore `stepper.passiStream(sorgente, maxPassi)`.
+6. La UI renderizza in parallelo:
+   - Il sorgente Scheme formattato nel passo corrente.
+   - La regola di riscrittura applicata (`regolaApplicata`).
+   - L'albero di scope dell'ambiente corrente (`SnapshotAmbiente`).
+   - I controlli di navigazione (Prima, Precedente, Play/Pause, Successivo, Ultima).
 
-== CLI di tracing
+== CLI di Tracing per Debugging
 
-Per ottenere timeline da file programma:
-
-[source,bash]
-----
-./scripts/stepper-trace.sh ./esempi/programma.scm --max-passi 200
-----
-
-Per output JSON (consigliato per frontend):
+Per generare la traccia di riduzione direttamente da terminale:
 
 [source,bash]
 ----
-./scripts/stepper-trace.sh ./esempi/programma.scm --max-passi 200 --json
+./src/lib/scheme/scripts/stepper-trace.sh ./src/lib/scheme/cli/01_atomi.scm --max-passi 200
 ----
 
-== Stato minimo UI
+Per output JSON strutturato (equivalente a quanto ricevuto dal frontend):
+
+[source,bash]
+----
+./src/lib/scheme/scripts/stepper-trace.sh ./src/lib/scheme/cli/01_atomi.scm --max-passi 200 --json
+----
+
+== Struttura di Stato Consigliata nel Componente Web
 
 [source,typescript]
 ----
-interface TimelineState {
-  sourceCode: string;
-  steps: SnapshotPassoStepping[];
-  currentStepIndex: number;
-  isTerminated: boolean;
-  error: null | {
-    code: string;
-    message: string;
-    details?: string;
+import type { SnapshotPassoStepping } from '$lib/scheme/ast/formatter';
+import type { CodiceErroreScheme } from '$lib/scheme/docs/error-model';
+
+export interface StatoVisualizzatoreScheme {
+  sorgente: string;
+  idAmbienteSelezionato: string;
+  passi: SnapshotPassoStepping[];
+  indicePassoCorrente: number;
+  inEsecuzione: boolean;
+  errore: null | {
+    codice: CodiceErroreScheme;
+    messaggio: string;
   };
 }
 ----
 
-== Contratto payload suggerito
+== Payload JSON DTO di Esempio (`SnapshotPassoStepping`)
 
 [source,json]
 ----
 {
-  "sourceCode": "(define x 10) (+ x 5)",
-  "steps": [
-    {
-      "indice": 0,
-      "regola": "Programma: forma 1/2 -> Definizione variabile: 'x' = 10",
-      "precedente": "(define x 10)\n(+ x 5)",
-      "successivo": "10\n(+ x 5)",
-      "terminato": false,
-      "haRidotto": true,
-      "focusProgramma": { "indiceForma": 1, "totaleForme": 2 }
-    }
-  ]
+  "indice": 0,
+  "regola": "Programma: forma 1/2 -> Definizione variabile: 'x' = 10",
+  "precedente": "(define x 10)\n(+ x 5)",
+  "successivo": "10\n(+ x 5)",
+  "terminato": false,
+  "haRidotto": true,
+  "focusProgramma": {
+    "indiceForma": 1,
+    "totaleForme": 2
+  },
+  "ambiente": {
+    "scope": [
+      {
+        "binding": {
+          "x": "10",
+          "+": "#<primitiva>"
+        }
+      }
+    ]
+  }
 }
 ----
 
-== UX minima consigliata
+== Requisiti UX Consigliati
 
-- Pannello sorgente input
-- Vista AST simbolica corrente
-- Regola applicata nel passo corrente
-- Timeline numerata cliccabile
-- Indicatore terminazione
-- Pannello errori parser/stepper
+- **Pannello Editor Sorgente:** Con evidenziazione della sintassi Scheme.
+- **Pannello Riduzione AST:** Visualizzazione del codice Scheme corrispondente all mezza riduzione corrente.
+- **Pannello Spiegazione Regola:** Banner evidenziato contenente `regola`.
+- **Pannello Ispezione Ambienti:** Visualizzazione ad albero degli scope (`SnapshotAmbiente`) con i relativi legami `simbolo -> valore`.
+- **Timeline Interattiva:** Barra di avanzamento o elenco dei passi selezionabili direttamente.
+- **Gestione Errori:** Componente dedicato per segnalare syntax error o runtime error con indicazione del passo.
 
-== Test di integrazione da preservare
+== Test di Integrazione di Riferimento
 
-- runtime/stepper-integrazione.test.ts
-- runtime/stepper-formatter.test.ts
+- `src/lib/scheme/runtime/stepper-integrazione.test.ts`
+- `src/lib/scheme/runtime/stepper-formatter.test.ts`
+- `src/lib/scheme/cli/stepper-cli.test.ts`
+

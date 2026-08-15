@@ -43,6 +43,19 @@ describe('Integrazione parser-stepper', () => {
 		const passiOr = stepper.passiDaSorgente('(or #f #t)', 20);
 		const orFinale = formatter.stampa(passiOr[passiOr.length - 1].astSuccessivo);
 		expect(orFinale).toContain('#t');
+
+		// Short-circuiting tests
+		const passiAndShortCircuit = stepper.passiDaSorgente('(and #f simbolonondefinito)', 20);
+		const andSCFinale = formatter.stampa(
+			passiAndShortCircuit[passiAndShortCircuit.length - 1].astSuccessivo
+		);
+		expect(andSCFinale).toBe('#f');
+
+		const passiOrShortCircuit = stepper.passiDaSorgente('(or #t simbolonondefinito)', 20);
+		const orSCFinale = formatter.stampa(
+			passiOrShortCircuit[passiOrShortCircuit.length - 1].astSuccessivo
+		);
+		expect(orSCFinale).toBe('#t');
 	});
 
 	test('applica primo a una lista quotata', () => {
@@ -137,4 +150,3 @@ describe('Integrazione parser-stepper', () => {
 		});
 	});
 });
-

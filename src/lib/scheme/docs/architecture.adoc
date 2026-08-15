@@ -1,67 +1,92 @@
 = Architecture
-:toc:
+:toc: left
+:toclevels: 3
+:sectnums:
 
 == Obiettivo
 
-Visualizzare l'evoluzione di un programma Scheme come sequenza di trasformazioni AST fino al termine.
+Visualizzare e tracciare l'evoluzione di un programma Scheme come sequenza deterministica di trasformazioni dell'Albero Sintattico Astratto (AST) e dello stato degli ambienti di calcolo fino al raggiungimento della forma normale irriducibile.
 
 == Pipeline principale
 
 [source,text]
 ----
-Source Code
-  -> Lexer (tokens)
-  -> Parser (ProgrammaAST)
-  -> Stepper (PassoStepping[])
-  -> Formatter (SnapshotPassoStepping[])
-  -> Web UI Timeline
+Codice Sorgente Scheme
+  -> Lexer (analizzatoreLessicale -> Parola[])
+  -> Parser (ParserScheme -> ProgrammaAST)
+  -> Stepper (StepperScheme -> PassoStepping[] / passiStream)
+  -> Formatter (FormatterScheme -> SnapshotPassoStepping[])
+  -> Visualizzazione UI Web / CLI Output
 ----
 
-== Componenti
+== Componenti Principali
 
-=== Lexer
+=== Lexer (`src/lib/scheme/lexer/`)
 
-Responsabilita:
+**Responsabilità:**
 
-- tokenizzazione del sorgente
-- normalizzazione booleana base
-- gestione quote, parentesi, punto
+- Tokenizzazione del codice sorgente Scheme tramite `analizzatoreLessicale`.
+- Riconoscimento di tipi di token (`TipoDiParole`): Parentesi, Booleani (`#t`, `#f`), Numeri, Stringhe, Simboli, Citazione (`'`), Punto (`.`), Commenti (ignorati).
+- Tracciamento della posizione dei token nel sorgente per messaggi di errore ed ispezione.
 
-Output: sequenza di token con FineDelFile.
+**Output:** Sequenza ordinata di token (`Parola[]`) terminata dal token sintetico `FineDelFile`.
 
-=== Parser
+=== Parser (`src/lib/scheme/ast/parser.ts`)
 
-Responsabilita:
+**Responsabilità:**
 
-- parsing top-level in ProgrammaAST
-- gestione forme speciali (define, lambda, if, and, or, cond)
-- parsing datum citati (lista, coppia puntata)
+- Parsing top-level a discesa ricorsiva da token a `ProgrammaAST`.
+- Parsing delle forme speciali tipizzate:
+  * `DefineAST`: definizioni di variabili e funzioni (`define`, `definisci`).
+  * `LambdaAST`: espressioni di chiusura di funzione (`lambda`).
+  * `IfAST`: condizionale binario (`if`, `se`).
+  * `AndAST`: congiunzione logica a n-argomenti con cortocircuito (`and`, `e`).
+  * `OrAST`: disgiunzione logica a n-argomenti con cortocircuito (`or`, `o`).
+  * `CondAST`: condizionale multi-ramo con clausole e ramo `else` / `altrimenti`.
+  * `CitazioneAST`: citazioni di atomi, liste e coppie puntate (`quote`, `cita`, `'`).
+  * `ApplicazioneAST`: chiamate di funzione e primitive.
+- Sollevamento di `SyntaxError` strutturati in caso di sintassi non valida.
 
-Output: AST tipizzato e navigabile con visitor.
+**Output:** Albero AST radice `ProgrammaAST` navigabile via Visitor pattern.
 
-=== Stepper
+=== Ambienti di Calcolo (`src/lib/scheme/runtime/ambiente*.ts`)
 
-Responsabilita:
+**Responsabilità:**
 
-- riduzione small-step di un nodo
-- riduzione sequenziale di ProgrammaAST
-- mantenimento ambiente di valutazione
+- Gestione dello scope lessicale gerarchico (parent/child) tramite la classe `Ambiente<ValoreScheme>`.
+- Risoluzione dei simboli con ricerca ricorsiva lungo la catena di ambienti.
+- Generazione di istantanee dello stato (`SnapshotAmbiente` e `SnapshotScopeAmbiente`) serializzate per ogni passo.
+- Registro profili d'ambiente predefiniti via `creaAmbiente(id)` e `registroAmbienti`:
+  * `"standard"`: include lista vuota, primitive aritmetiche, logiche e predicati di lista.
+  * `"minimo-numeri-naturali"`: sottoinsieme minimo per aritmetica Peano (`zero?`, `s`, `p`).
+  * `"nat-add-sot-min"`: aritmetica estesa per algoritmi di divisione.
 
-Output: PassoStepping con stato precedente/successivo, regola, terminazione.
+=== Stepper (`src/lib/scheme/runtime/stepper.ts`)
 
-=== Formatter
+**Responsabilità:**
 
-Responsabilita:
+- Riduzione a piccoli passi (*small-step reduction*) di un nodo AST o dell'intero `ProgrammaAST`.
+- Esecuzione del ciclo di riduzione:
+  1. Risoluzione dei simboli nello scope corrente.
+  2. Valutazione left-to-right degli argomenti nelle applicazioni.
+  3. Riscrittura sostitutiva delle clausole per `if`, `and`, `or`, `cond`.
+  4. Applicazione di funzioni primitive TypeScript (`FunzionePrimitiva`).
+  5. Riscrittura lambda con sostituzione dei parametri formali (`Chiusura`).
+- Generazione della sequenza di `PassoStepping` contenente `astPrecedente`, `astSuccessivo`, `regolaApplicata`, `èTerminato` e lo `SnapshotAmbiente`.
+- Supporto sia per la timeline completa (`passiDaSorgente`) sia per la fruizione pigra/streaming (`passiStream`).
 
-- serializzazione canonica AST
-- produzione timeline snapshot per UI
-- serializzazione lineare per log/debug
+=== Formatter (`src/lib/scheme/ast/formatter.ts`)
 
-Output: stringhe simboliche e DTO di tracing.
+**Responsabilità:**
 
-== Principi architetturali
+- Rendering simbolico canonico in stringa Scheme per ogni nodo AST tramite `FormatterScheme` (Visitor).
+- Conversione dei `PassoStepping` nei DTO di snapshot (`SnapshotPassoStepping`) per l'integrazione frontend.
+- Generazione di tracce testuali lineari per il debugging ed il tracciamento via CLI.
 
-- Determinismo: stessa input source produce stessa timeline.
-- Tracciabilita: ogni passo ha regola esplicita.
-- Isolamento: parser, stepper e formatter testabili separatamente.
-- Componibilita: formatter consuma solo oggetti stepper, non dettagli UI.
+== Principi Architetturali
+
+- **Determinismo:** L'esecuzione di uno stesso sorgente produce una sequenza identica e riproducibile di passi e istantanee.
+- **Tracciabilità:** Ogni riscrittura dell'AST è accompagnata da una stringa descrittiva esplicita della regola applicata.
+- **Isolamento dei Moduli:** Lexer, Parser, Stepper, Ambienti e Formatter sono disaccoppiati e testati in modo indipendente.
+- **Type Safety:** Uso rigoroso di tipi TypeScript per valori (`ValoreScheme`), nodi AST e stati dell'ambiente.
+

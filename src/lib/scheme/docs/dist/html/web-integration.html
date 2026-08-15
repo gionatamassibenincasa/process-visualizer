@@ -2025,74 +2025,164 @@
 			}
 		</style>
 	</head>
-	<body class="article">
+	<body class="article toc2 toc-left">
 		<div id="header">
 			<h1>Web Integration</h1>
-			<div id="toc" class="toc">
+			<div id="toc" class="toc2">
 				<div id="toctitle">Table of Contents</div>
 				<ul class="sectlevel1">
-					<li><a href="#_obiettivo">Obiettivo</a></li>
-					<li><a href="#_flusso_consigliato">Flusso consigliato</a></li>
-					<li><a href="#_stato_minimo_ui">Stato minimo UI</a></li>
-					<li><a href="#_contratto_payload_suggerito">Contratto payload suggerito</a></li>
-					<li><a href="#_ux_minima_consigliata">UX minima consigliata</a></li>
+					<li><a href="#_obiettivo">1. Obiettivo</a></li>
 					<li>
-						<a href="#_test_di_integrazione_da_preservare">Test di integrazione da preservare</a>
+						<a href="#_flusso_di_esecuzione_consigliato">2. Flusso di Esecuzione Consigliato</a>
+					</li>
+					<li><a href="#_cli_di_tracing_per_debugging">3. CLI di Tracing per Debugging</a></li>
+					<li>
+						<a href="#_struttura_di_stato_consigliata_nel_componente_web"
+							>4. Struttura di Stato Consigliata nel Componente Web</a
+						>
+					</li>
+					<li>
+						<a href="#_payload_json_dto_di_esempio_snapshotpassostepping"
+							>5. Payload JSON DTO di Esempio (<code>SnapshotPassoStepping</code>)</a
+						>
+					</li>
+					<li><a href="#_requisiti_ux_consigliati">6. Requisiti UX Consigliati</a></li>
+					<li>
+						<a href="#_test_di_integrazione_di_riferimento"
+							>7. Test di Integrazione di Riferimento</a
+						>
 					</li>
 				</ul>
 			</div>
 		</div>
 		<div id="content">
 			<div class="sect1">
-				<h2 id="_obiettivo">Obiettivo</h2>
+				<h2 id="_obiettivo">1. Obiettivo</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
 						<p>
-							Integrare parser-stepper-formatter in una UI che mostri la riduzione AST passo-passo.
+							Fornire indicazioni e specifiche per integrare la libreria Scheme
+							(<code>src/lib/scheme</code>) in una Web Application Svelte/Vite per la
+							visualizzazione interattiva dell&#8217;esecuzione e della riduzione dell&#8217;AST
+							passo-passo.
 						</p>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_flusso_consigliato">Flusso consigliato</h2>
+				<h2 id="_flusso_di_esecuzione_consigliato">2. Flusso di Esecuzione Consigliato</h2>
 				<div class="sectionbody">
 					<div class="olist arabic">
 						<ol class="arabic">
 							<li>
-								<p>Utente invia sorgente Scheme.</p>
+								<p>
+									L&#8217;utente inserisce o seleziona il codice sorgente Scheme nel componente
+									editor (es. CodeMirror).
+								</p>
 							</li>
 							<li>
-								<p>Backend/worker invoca passiDaSorgente.</p>
+								<p>
+									La Web App rileva l&#8217;ambiente dichiarato via direttiva
+									<code>; ambiente: &lt;id&gt;</code> oppure usa il profilo scelto
+									dall&#8217;utente.
+								</p>
 							</li>
 							<li>
-								<p>Formatter converte i passi in snapshot timeline.</p>
+								<p>
+									Il worker o la funzione della UI invoca
+									<code>StepperScheme.daSorgente(sorgente)</code> ottenendo l&#8217;istanza dello
+									stepper.
+								</p>
 							</li>
 							<li>
-								<p>UI renderizza stato corrente e regola applicata.</p>
+								<p>
+									Per visualizzazione sequenziale completa: invoca
+									<code>stepper.passiDaSorgente(sorgente, maxPassi)</code> e formatta con
+									<code>FormatterScheme.formattaTimelineStepping(passi)</code>.
+								</p>
 							</li>
 							<li>
-								<p>Utente naviga avanti/indietro tra i passi.</p>
+								<p>
+									Per elaborazioni incrementalmente reattive (es. animazione passo-passo o grandi
+									programmi): usa il generatore
+									<code>stepper.passiStream(sorgente, maxPassi)</code>.
+								</p>
+							</li>
+							<li>
+								<p>La UI renderizza in parallelo:</p>
+								<div class="ulist">
+									<ul>
+										<li>
+											<p>Il sorgente Scheme formattato nel passo corrente.</p>
+										</li>
+										<li>
+											<p>La regola di riscrittura applicata (<code>regolaApplicata</code>).</p>
+										</li>
+										<li>
+											<p>
+												L&#8217;albero di scope dell&#8217;ambiente corrente
+												(<code>SnapshotAmbiente</code>).
+											</p>
+										</li>
+										<li>
+											<p>
+												I controlli di navigazione (Prima, Precedente, Play/Pause, Successivo,
+												Ultima).
+											</p>
+										</li>
+									</ul>
+								</div>
 							</li>
 						</ol>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_stato_minimo_ui">Stato minimo UI</h2>
+				<h2 id="_cli_di_tracing_per_debugging">3. CLI di Tracing per Debugging</h2>
+				<div class="sectionbody">
+					<div class="paragraph">
+						<p>Per generare la traccia di riduzione direttamente da terminale:</p>
+					</div>
+					<div class="listingblock">
+						<div class="content">
+							<pre
+								class="highlight"
+							><code class="language-bash" data-lang="bash">./src/lib/scheme/scripts/stepper-trace.sh ./src/lib/scheme/cli/01_atomi.scm --max-passi 200</code></pre>
+						</div>
+					</div>
+					<div class="paragraph">
+						<p>Per output JSON strutturato (equivalente a quanto ricevuto dal frontend):</p>
+					</div>
+					<div class="listingblock">
+						<div class="content">
+							<pre
+								class="highlight"
+							><code class="language-bash" data-lang="bash">./src/lib/scheme/scripts/stepper-trace.sh ./src/lib/scheme/cli/01_atomi.scm --max-passi 200 --json</code></pre>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="sect1">
+				<h2 id="_struttura_di_stato_consigliata_nel_componente_web">
+					4. Struttura di Stato Consigliata nel Componente Web
+				</h2>
 				<div class="sectionbody">
 					<div class="listingblock">
 						<div class="content">
 							<pre
 								class="highlight"
-							><code class="language-typescript" data-lang="typescript">interface TimelineState {
-  sourceCode: string;
-  steps: SnapshotPassoStepping[];
-  currentStepIndex: number;
-  isTerminated: boolean;
-  error: null | {
-    code: string;
-    message: string;
-    details?: string;
+							><code class="language-typescript" data-lang="typescript">import type { SnapshotPassoStepping } from '$lib/scheme/ast/formatter';
+import type { CodiceErroreScheme } from '$lib/scheme/docs/error-model';
+
+export interface StatoVisualizzatoreScheme {
+  sorgente: string;
+  idAmbienteSelezionato: string;
+  passi: SnapshotPassoStepping[];
+  indicePassoCorrente: number;
+  inEsecuzione: boolean;
+  errore: null | {
+    codice: CodiceErroreScheme;
+    messaggio: string;
   };
 }</code></pre>
 						</div>
@@ -2100,65 +2190,97 @@
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_contratto_payload_suggerito">Contratto payload suggerito</h2>
+				<h2 id="_payload_json_dto_di_esempio_snapshotpassostepping">
+					5. Payload JSON DTO di Esempio (<code>SnapshotPassoStepping</code>)
+				</h2>
 				<div class="sectionbody">
 					<div class="listingblock">
 						<div class="content">
 							<pre class="highlight"><code class="language-json" data-lang="json">{
-  "sourceCode": "(define x 10) (+ x 5)",
-  "steps": [
-    {
-      "indice": 0,
-      "regola": "Programma: forma 1/2 -&gt; Definizione variabile: 'x' = 10",
-      "precedente": "(define x 10)\n(+ x 5)",
-      "successivo": "10\n(+ x 5)",
-      "terminato": false,
-      "haRidotto": true,
-      "focusProgramma": { "indiceForma": 1, "totaleForme": 2 }
-    }
-  ]
+  "indice": 0,
+  "regola": "Programma: forma 1/2 -&gt; Definizione variabile: 'x' = 10",
+  "precedente": "(define x 10)\n(+ x 5)",
+  "successivo": "10\n(+ x 5)",
+  "terminato": false,
+  "haRidotto": true,
+  "focusProgramma": {
+    "indiceForma": 1,
+    "totaleForme": 2
+  },
+  "ambiente": {
+    "scope": [
+      {
+        "binding": {
+          "x": "10",
+          "+": "#&lt;primitiva&gt;"
+        }
+      }
+    ]
+  }
 }</code></pre>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_ux_minima_consigliata">UX minima consigliata</h2>
+				<h2 id="_requisiti_ux_consigliati">6. Requisiti UX Consigliati</h2>
 				<div class="sectionbody">
 					<div class="ulist">
 						<ul>
 							<li>
-								<p>Pannello sorgente input</p>
+								<p>
+									<strong>Pannello Editor Sorgente:</strong> Con evidenziazione della sintassi
+									Scheme.
+								</p>
 							</li>
 							<li>
-								<p>Vista AST simbolica corrente</p>
+								<p>
+									<strong>Pannello Riduzione AST:</strong> Visualizzazione del codice Scheme
+									corrispondente all mezza riduzione corrente.
+								</p>
 							</li>
 							<li>
-								<p>Regola applicata nel passo corrente</p>
+								<p>
+									<strong>Pannello Spiegazione Regola:</strong> Banner evidenziato contenente
+									<code>regola</code>.
+								</p>
 							</li>
 							<li>
-								<p>Timeline numerata cliccabile</p>
+								<p>
+									<strong>Pannello Ispezione Ambienti:</strong> Visualizzazione ad albero degli
+									scope (<code>SnapshotAmbiente</code>) con i relativi legami
+									<code>simbolo &#8594; valore</code>.
+								</p>
 							</li>
 							<li>
-								<p>Indicatore terminazione</p>
+								<p>
+									<strong>Timeline Interattiva:</strong> Barra di avanzamento o elenco dei passi
+									selezionabili direttamente.
+								</p>
 							</li>
 							<li>
-								<p>Pannello errori parser/stepper</p>
+								<p>
+									<strong>Gestione Errori:</strong> Componente dedicato per segnalare syntax error o
+									runtime error con indicazione del passo.
+								</p>
 							</li>
 						</ul>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_test_di_integrazione_da_preservare">Test di integrazione da preservare</h2>
+				<h2 id="_test_di_integrazione_di_riferimento">7. Test di Integrazione di Riferimento</h2>
 				<div class="sectionbody">
 					<div class="ulist">
 						<ul>
 							<li>
-								<p>runtime/stepper-integrazione.test.ts</p>
+								<p><code>src/lib/scheme/runtime/stepper-integrazione.test.ts</code></p>
 							</li>
 							<li>
-								<p>runtime/stepper-formatter.test.ts</p>
+								<p><code>src/lib/scheme/runtime/stepper-formatter.test.ts</code></p>
+							</li>
+							<li>
+								<p><code>src/lib/scheme/cli/stepper-cli.test.ts</code></p>
 							</li>
 						</ul>
 					</div>
@@ -2166,7 +2288,7 @@
 			</div>
 		</div>
 		<div id="footer">
-			<div id="footer-text">Last updated 2026-08-04 08:48:28 +0200</div>
+			<div id="footer-text">Last updated 2026-08-15 15:36:19 +0200</div>
 		</div>
 	</body>
 </html>

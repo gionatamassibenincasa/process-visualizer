@@ -166,6 +166,65 @@ export class FormatterScheme implements VisitorAST<string> {
 	}
 
 	/**
+	 * Converte una sequenza di passi dello stepper in un documento Markdown compatibile con Slidev (`sli.dev`).
+	 *
+	 * @param passi - Sequenza di passi dello stepper.
+	 * @param titolo - Titolo della presentazione Slidev (default `"Visualizzazione Esecuzione Scheme"`).
+	 * @returns Stringa Markdown per Slidev con slide separate da `---`.
+	 * @example
+	 * ```typescript
+	 * const markdownSlidev = formatter.formattaTimelineSlidev(passi, 'Fattoriale di 5');
+	 * ```
+	 */
+	formattaTimelineSlidev(
+		passi: PassoStepping[],
+		titolo: string = 'Visualizzazione Esecuzione Scheme'
+	): string {
+		const snapshots = this.formattaTimelineStepping(passi);
+		const slideIniziale = `---
+theme: default
+title: "${titolo}"
+info: "Presentazione automatica generata dallo Stepper Scheme"
+---
+
+# ${titolo}
+
+Traccia automatica dell'esecuzione dello stepper Scheme.
+
+- **Totale Passi:** ${snapshots.length}
+- **Stato Finale:** ${snapshots[snapshots.length - 1]?.terminato ? 'Completato' : 'Incompleto'}
+
+`;
+
+		const slidesPassi = snapshots
+			.map((s) => {
+				const badge = s.terminato ? 'VALORE FINALE' : 'RIDUZIONE';
+				const envBindings = s.ambiente.scope
+					.flatMap((scope) => Object.entries(scope.binding))
+					.map(([k, v]) => `  ${k}: ${v}`)
+					.join('\n');
+
+				return `---
+layout: default
+---
+
+# Passo ${s.indice + 1} / ${snapshots.length} \`<${badge}>\`
+
+### Stato AST
+\`\`\`scheme
+${s.successivo}
+\`\`\`
+
+> **Regola applicata:** ${s.regola}
+
+${envBindings ? `### Ambiente\n\`\`\`yaml\n${envBindings}\n\`\`\`\n` : ''}`;
+			})
+			.join('\n');
+
+		return slideIniziale + slidesPassi;
+	}
+
+	/**
 	 * Analizza il testo della regola applicata per estrarre l'indice della forma top-level in esecuzione.
 	 */
 	private estraiFocusProgramma(regola: string): FocusFormaProgramma | null {

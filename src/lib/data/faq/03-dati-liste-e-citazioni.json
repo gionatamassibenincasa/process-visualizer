@@ -1,0 +1,78 @@
+{
+	"id": "dati-liste-e-citazioni",
+	"titolo": "Dati, Liste e Citazioni (Quote)",
+	"icona": "list",
+	"descrizione": "Costruzione di liste, coppie puntate (cons cells), datum letterali e citazioni con quote.",
+	"items": [
+		{
+			"id": "cose-una-lista",
+			"domanda": "Cos'è una Lista sintatticamente?",
+			"risposta": "Una lista è una struttura composta racchiusa tra parentesi tonde `(...)` che contiene una sequenza di zero o più dati (`Datum`). Può essere vuota `'()` o contenere elementi eterogenei (atomi, altre liste o coppie).",
+			"ebnf": "Lista            ::= \"(\" Datum* \")\"",
+			"esempio": [
+				{
+					"titolo": "Esempi di Liste",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n'()             ; Lista vuota\n'(1 2 3)        ; Lista di tre numeri\n'(#vero \"ciao\") ; Lista di booleano e stringa"
+				}
+			],
+			"tag": ["liste", "datum", "sintassi"]
+		},
+		{
+			"id": "concetto-datum",
+			"domanda": "In che modo il concetto di Datum unifica Atomi e Liste?",
+			"risposta": "Un *Datum* è la categoria sintattica generale per qualsiasi elemento di dato del linguaggio. Può essere sia un atomo indivisibile (numero, booleano, stringa, simbolo) sia una struttura aggregata (lista, coppia puntata o abbreviazione).",
+			"ebnf": "Datum            ::= Atomo | Lista | CoppiaPuntata | Abbreviazione",
+			"esempio": [
+				{
+					"titolo": "Datum Atomici vs Strutturati",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n'simbolo        ; Datum che è un Atomo (Simbolo)\n'(1 (2) 3)      ; Datum che è una Lista contenente un'altra Lista"
+				}
+			],
+			"tag": ["datum", "atomo", "liste"]
+		},
+		{
+			"id": "citazione-quote",
+			"domanda": "Cosa fa la forma di Citazione ('quote' o apostrofo ')?",
+			"risposta": "La forma di citazione `(quote <datum>)`, `(cita <datum>)` o la sintassi abbreviata `'<datum>` blocca la valutazione dell'argomento. Dice all'interprete di trattare il testo seguente come dato letterale, preservando simboli e liste senza tentare di eseguirli come funzioni o cercarli nell'ambiente.",
+			"ebnf": "Citazione        ::= \"(\" KwQuote Datum \")\" | \"'\" Datum\nKwQuote          ::= \"quote\" | \"cita\"",
+			"esempio": [
+				{
+					"titolo": "Uso di quote e dell'abbreviazione con apostrofo",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(cita (1 2 3))  ; produce la lista letterale (1 2 3)\n'(+ 1 2)        ; produce la lista di 3 elementi contenente il simbolo + e i numeri 1 e 2, senza sommarli"
+				}
+			],
+			"tag": ["quote", "citazione", "abbreviazione"]
+		},
+		{
+			"id": "coppia-puntata",
+			"domanda": "Cos'è una Coppia Puntata (Dotted Pair)?",
+			"risposta": "Una coppia puntata `(a . b)` è la cons-cell fondamentale di Scheme. Consiste di due elementi: il `primo` (`car`) e il `resto` (`cdr`). Se il secondo elemento non è una lista né `'()`, la coppia viene rappresentata con il punto separatore.",
+			"ebnf": "CoppiaPuntata    ::= \"(\" Datum+ \".\" Datum \")\"",
+			"esempio": [
+				{
+					"titolo": "Coppia puntata vs Lista propria",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n'(1 . 2)        ; Coppia con car=1 e cdr=2 (non è una lista propria)\n(cons 1 2)      ; produce (1 . 2)\n(cons 1 '(2))   ; produce la lista propria (1 2)"
+				}
+			],
+			"tag": ["coppia", "cons", "dotted-pair"]
+		},
+		{
+			"id": "ispezione-coppie-puntate",
+			"domanda": "Come gestisce la ricorsione le Coppie Puntate?",
+			"risposta": "In una coppia puntata `(a . b)`, il `cdr` non è una lista né la lista vuota `'()`, ma un atomo. Le funzioni ricorsive devono usare il predicato `coppia?` per fermarsi prima di tentare un `cdr` su un valore non strutturato a lista.",
+			"ebnf": "CoppiaPuntata    ::= \"(\" Datum+ \".\" Datum \")\"",
+			"esempio": [
+				{
+					"titolo": "Ispezione ricorsiva di coppie puntate",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci conta-coppia\n  (lambda (p)\n    (cond\n      ((non (coppia? p)) 1)\n      (altrimenti (+ (conta-coppia (car p))\n                     (conta-coppia (cdr p)))))))\n\n(conta-coppia '(1 . 2)) ; restituisce 2"
+				}
+			],
+			"tag": ["coppia", "ricorsione", "predicati"]
+		}
+	]
+}

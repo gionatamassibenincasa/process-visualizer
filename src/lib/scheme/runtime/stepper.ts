@@ -31,7 +31,7 @@ import {
 	ProgrammaAST
 } from '../ast/ast';
 import { Atomo } from '../ast/atomo';
-import { Coppia } from '../ast/coppia';
+import { Coppia, type TipoElemento } from '../ast/coppia';
 import { Lista } from '../ast/lista';
 import { parseProgrammaDaSorgente } from '../ast/parser';
 import { Ambiente, type SnapshotAmbiente } from './ambiente';
@@ -139,7 +139,6 @@ export class StepperScheme {
 		return this.env;
 	}
 
-
 	private èChiusura(valore: ValoreScheme): valore is Chiusura {
 		return (
 			typeof valore === 'object' &&
@@ -192,7 +191,11 @@ export class StepperScheme {
 		return new AtomoAST(String(valore));
 	}
 
-	private valoreDaCitazione(espressione: CitazioneAST['espressione']): ValoreScheme {
+	private valoreDaCitazione(espressione: CitazioneAST['espressione'] | TipoElemento): ValoreScheme {
+		if (espressione === null) {
+			return [];
+		}
+
 		if (espressione instanceof Atomo) {
 			return espressione.valore;
 		}
@@ -215,7 +218,7 @@ export class StepperScheme {
 		}
 
 		if (espressione instanceof Coppia) {
-			throw new Error('Le coppie puntate quotate non sono ancora supportate dal runtime.');
+			return [this.valoreDaCitazione(espressione.primo), this.valoreDaCitazione(espressione.resto)];
 		}
 
 		if (espressione instanceof AtomoAST) {
@@ -564,6 +567,114 @@ export class StepperScheme {
 			return {
 				astPrecedente: nodo,
 				astSuccessivo: new IfAST(subPasso.astSuccessivo, nodo.ramoThen, nodo.ramoElse),
+				regolaApplicata: subPasso.regolaApplicata,
+				èTerminato: false
+			};
+		}
+
+		// ==========================================
+		// 3.1. FORMA SPECIALE: AND
+		// ==========================================
+		if (nodo instanceof AndAST) {
+			if (nodo.espressioni.length === 0) {
+				return {
+					astPrecedente: nodo,
+					astSuccessivo: new AtomoAST(true),
+					regolaApplicata: "Valutazione 'and' senza argomenti -> #t",
+					èTerminato: false
+				};
+			}
+
+			const prima = nodo.espressioni[0];
+
+			if (prima instanceof AtomoAST) {
+				if (prima.valore === false) {
+					return {
+						astPrecedente: nodo,
+						astSuccessivo: new AtomoAST(false),
+						regolaApplicata: "Cortocircuito 'and' con valore #f",
+						èTerminato: false
+					};
+				}
+
+				if (nodo.espressioni.length === 1) {
+					return {
+						astPrecedente: nodo,
+						astSuccessivo: prima,
+						regolaApplicata: "Valutazione finale 'and'",
+						èTerminato: false
+					};
+				}
+
+				return {
+					astPrecedente: nodo,
+					astSuccessivo: new AndAST(nodo.espressioni.slice(1)),
+					regolaApplicata: "Avanzamento 'and': prima espressione soddisfatta",
+					èTerminato: false
+				};
+			}
+
+			const subPasso = this.passoInterno(prima, env);
+			const nuoveEspressioni = [...nodo.espressioni];
+			nuoveEspressioni[0] = subPasso.astSuccessivo;
+
+			return {
+				astPrecedente: nodo,
+				astSuccessivo: new AndAST(nuoveEspressioni),
+				regolaApplicata: subPasso.regolaApplicata,
+				èTerminato: false
+			};
+		}
+
+		// ==========================================
+		// 3.2. FORMA SPECIALE: OR
+		// ==========================================
+		if (nodo instanceof OrAST) {
+			if (nodo.espressioni.length === 0) {
+				return {
+					astPrecedente: nodo,
+					astSuccessivo: new AtomoAST(false),
+					regolaApplicata: "Valutazione 'or' senza argomenti -> #f",
+					èTerminato: false
+				};
+			}
+
+			const prima = nodo.espressioni[0];
+
+			if (prima instanceof AtomoAST) {
+				if (prima.valore !== false) {
+					return {
+						astPrecedente: nodo,
+						astSuccessivo: prima,
+						regolaApplicata: "Cortocircuito 'or' con valore truthy",
+						èTerminato: false
+					};
+				}
+
+				if (nodo.espressioni.length === 1) {
+					return {
+						astPrecedente: nodo,
+						astSuccessivo: new AtomoAST(false),
+						regolaApplicata: "Valutazione finale 'or' (#f)",
+						èTerminato: false
+					};
+				}
+
+				return {
+					astPrecedente: nodo,
+					astSuccessivo: new OrAST(nodo.espressioni.slice(1)),
+					regolaApplicata: "Avanzamento 'or': scarto clausola #f",
+					èTerminato: false
+				};
+			}
+
+			const subPasso = this.passoInterno(prima, env);
+			const nuoveEspressioni = [...nodo.espressioni];
+			nuoveEspressioni[0] = subPasso.astSuccessivo;
+
+			return {
+				astPrecedente: nodo,
+				astSuccessivo: new OrAST(nuoveEspressioni),
 				regolaApplicata: subPasso.regolaApplicata,
 				èTerminato: false
 			};

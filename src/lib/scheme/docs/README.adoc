@@ -3,37 +3,39 @@
 :toclevels: 3
 :sectnums:
 
-Questa cartella contiene la documentazione tecnica del motore Scheme orientata a:
+Questa cartella contiene la documentazione tecnica del motore dell'interprete Scheme (`src/lib/scheme`) orientata a:
 
-- comprensione umana (architettura, semantica, integrazione)
-- consumo da LLM (contratti espliciti, output deterministici, esempi canonici)
-- integrazione API verso web app (timeline di riduzione AST)
+- comprensione umana (architettura, semantica operativa, integrazione web)
+- consumo da LLM (contratti API espliciti, output deterministici, esempi canonici)
+- integrazione API verso la web app (timeline di riduzione AST, streaming dei passi, istantanee degli ambienti)
 
 == Mappa documenti
 
-- xref:architecture.adoc[Architecture]
-- xref:language-semantics.adoc[Language Semantics]
-- xref:api-contracts.adoc[API Contracts]
-- xref:web-integration.adoc[Web Integration]
-- xref:error-model.adoc[Error Model]
-- xref:checklist-retrodoc.adoc[Retro-Documentation Checklist]
-- xref:adr/0001-docs-strategy.adoc[ADR-0001 Docs Strategy]
+- xref:architecture.adoc[Architecture] - Architettura della pipeline Lexer -> Parser -> Stepper -> Formatter -> Ambiente.
+- xref:language-semantics.adoc[Language Semantics] - Semantica operativa dettagliata e regole di riduzione delle forme speciali.
+- xref:api-contracts.adoc[API Contracts] - Contratti API stabili per `StepperScheme`, `Ambiente`, `FormatterScheme` e la factory degli ambienti.
+- xref:web-integration.adoc[Web Integration] - Linee guida per l'integrazione del visualizzatore nella UI web (snapshot, streaming, direttive di ambiente).
+- xref:error-model.adoc[Error Model] - Modellazione formale degli errori (Sintattici, Runtime, Arity Mismatch, Undefined Symbol).
+- xref:checklist-retrodoc.adoc[Retro-Documentation Checklist] - Matrice di tracciabilità e checklist di allineamento.
+- xref:adr/0001-docs-strategy.adoc[ADR-0001 Docs Strategy] - Decisione architetturale sulla strategia di documentazione ibrida.
 
 == Ambito corrente
 
-Motore in analisi:
+Modulo Scheme in `src/lib/scheme`:
 
-- AST: costruzione nodi e visitor
-- Lexer: tokenizzazione sorgente Scheme
-- Parser: sorgente -> ProgrammaAST
-- Stepper: riduzione small-step
-- Formatter: rendering simbolico e timeline snapshot
+- **AST** (`ast/`): costruzione nodi (`ProgrammaAST`, `AtomoAST`, `DefineAST`, `LambdaAST`, `IfAST`, `AndAST`, `OrAST`, `CondAST`, `ApplicazioneAST`, `CitazioneAST`) e pattern Visitor.
+- **Lexer** (`lexer/`): tokenizzazione del sorgente Scheme (`analizzatoreLessicale`, `TipoDiParole`).
+- **Parser** (`ast/parser.ts`): trasformazione token -> `ProgrammaAST` a discesa ricorsiva.
+- **Runtime & Ambienti** (`runtime/`): gestione scope lessicale (`Ambiente`), profili registrati (`standard`, `minimo-numeri-naturali`, `nat-add-sot-min`), tipi di valore (`ValoreScheme`, `Chiusura`, `FunzionePrimitiva`).
+- **Stepper** (`runtime/stepper.ts`): motore di riduzione small-step (`StepperScheme`), supporto sia per l'intera timeline che per lo streaming via generatori (`passiStream`).
+- **Formatter** (`ast/formatter.ts`): rendering simbolico canonico e produzione di istantanee timeline per la UI.
+- **CLI** (`cli/stepper-cli.ts`): interfaccia a riga di comando per l'ispezione delle riduzioni con flag `--json`, `--max-passi`, `--ambiente`.
 
 == Convenzioni
 
-- Ogni API pubblica deve avere JSDoc con precondizioni, postcondizioni, errori.
-- Ogni esempio in docs deve essere eseguibile o verificabile via test.
-- Ogni modifica semantica richiede aggiornamento della matrice di tracciabilita.
+- Ogni file sorgente `.ts` in `src/lib/scheme` comincia con il commento del percorso di file (es. `// file: src/lib/scheme/...`).
+- Ogni simbolo esportato dispone di documentazione JSDoc estesa con precondizioni, postcondizioni, eccezioni lanciate ed esempi d'uso.
+- Ogni esempio o contratto definito nei documenti è verificato da test automatizzati (`bun test`).
 
 == Build documentazione
 
@@ -59,3 +61,4 @@ Per generare entrambi:
 ----
 ./build-docs.sh all
 ----
+

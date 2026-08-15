@@ -1,0 +1,78 @@
+{
+	"id": "ambienti-e-struttura",
+	"titolo": "Ambiente e Struttura del Programma",
+	"icona": "layers",
+	"descrizione": "Come è strutturato un file Scheme, il concetto di ambiente lessicale e la direttiva di prima riga.",
+	"items": [
+		{
+			"id": "direttiva-ambiente",
+			"domanda": "Perché leggo '; ambiente: <nome-ambiente>' nella prima riga di alcuni programmi?",
+			"risposta": "È una direttiva speciale sotto forma di commento che, se scritta nella prima riga, indica al motore in quale 'ambiente' valutare il programma. Deve essere esattamente nella forma `; ambiente: <nome-ambiente>`, dove `<nome-ambiente>` è uno dei profili registrati: `standard`, `minimo-numeri-naturali`, `nat-add-sot-min`, ecc.",
+			"ebnf": "Ambiente        ::= \"standard\" | \"minimo-numeri-naturali\" | \"nat-add-sot-min\"",
+			"esempio": [
+				{
+					"titolo": "Dichiarazione dell'ambiente minimo",
+					"tipo": "codice",
+					"contenuto": "; ambiente: minimo-numeri-naturali\n; In questo ambiente sono disponibili solo le primitive di base:\n; zero? (predicato), s (successore), p (precedente)\n(s (s 0)) ; restituisce 2"
+				}
+			],
+			"tag": ["ambiente", "direttive", "configurazione"]
+		},
+		{
+			"id": "cose-ambiente",
+			"domanda": "Cos'è l'Ambiente in Scheme?",
+			"risposta": "L'ambiente è una struttura a dizionari gerarchici (scope) che associa nomi di identificatori ai rispettivi valori (costanti o funzioni). Quando il codice viene valutato, l'interprete cerca le variabili risalendo la catena degli scope dall'ambiente locale a quello globale.",
+			"ebnf": "Ambiente        ::= ScopeLocale* ScopeGlobale\nBinding         ::= Identificatore \"->\" ValoreScheme",
+			"esempio": [
+				{
+					"titolo": "Valutazione nell'ambiente standard",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(+ 1 2) ; restituisce 3 perché l'ambiente standard include la primitiva '+'"
+				}
+			],
+			"tag": ["ambiente", "runtime", "scope"]
+		},
+		{
+			"id": "commenti",
+			"domanda": "Come funzionano i commenti nel codice?",
+			"risposta": "Qualsiasi testo che segue un punto e virgola `;` fino alla fine della riga corrente è considerato un commento. I commenti (a eccezione dell'eventuale direttiva di ambiente sulla prima riga) vengono ignorati dal parser e servono per documentare il codice.",
+			"ebnf": "Commento        ::= \";\" [^\\n]*",
+			"esempio": [
+				{
+					"titolo": "Commenti su riga singola e inline",
+					"tipo": "codice",
+					"contenuto": "; Questo è un commento a riga intera\n(definisci x 42) ; Questo è un commento a fine riga\nx"
+				}
+			],
+			"tag": ["commenti", "sintassi"]
+		},
+		{
+			"id": "struttura-programma",
+			"domanda": "Cos'è un Programma in Scheme?",
+			"risposta": "Un programma in Scheme è una sequenza ordinata (eventualmente vuota) di forme sintattiche (`Forma*`). Ogni forma può essere una definizione (`Definizione`) oppure un'espressione da valutare (`Espressione`). Lo stepper valuta le forme una alla volta da sinistra a destra.",
+			"ebnf": "Programma       ::= Forma*\nForma           ::= Definizione | Espressione",
+			"esempio": [
+				{
+					"titolo": "Programma con definizioni ed espressione finale",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci raggio 5)\n(definisci pi 3)\n(* pi (* raggio raggio)) ; Valuta l'area del cerchio: 75"
+				}
+			],
+			"tag": ["programma", "ast", "top-level"]
+		},
+		{
+			"id": "profili-ambienti-supportati",
+			"domanda": "Quali ambienti predefiniti sono disponibili?",
+			"risposta": "Il sistema include profili con gradi diversi di primitive:\n1. `standard`: supporta tutte le primitive tipiche (aritmetica completa, `cons`, `car`, `cdr`, `null?`, `eq?`, `atomo?`, ecc.) e i rispettivi alias italiani (`primo`, `resto`, `costruisci`, `vuoto?`, `uguale?`).\n2. `minimo-numeri-naturali`: fornisce solo l'aritmetica di Peano con `zero?`, `s` (successore), `p` (precedente).\n3. `nat-add-sot-min`: estende i naturali con somma, sottrazione e confronto minore.",
+			"ebnf": "ProfiloAmbiente ::= \"standard\" | \"minimo-numeri-naturali\" | \"nat-add-sot-min\"",
+			"esempio": [
+				{
+					"titolo": "Uso degli alias italiani nell'ambiente standard",
+					"tipo": "codice",
+					"contenuto": "; ambiente: standard\n(definisci l (costruisci 10 (costruisci 20 '())))\n(primo l) ; restituisce 10\n(resto l) ; restituisce (20)"
+				}
+			],
+			"tag": ["ambiente", "primitive", "italiano"]
+		}
+	]
+}

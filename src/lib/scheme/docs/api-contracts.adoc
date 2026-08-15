@@ -1,82 +1,92 @@
 = API Contracts
-:toc:
+:toc: left
+:toclevels: 3
+:sectnums:
 
 == Scopo
 
-Definire il contratto stabile tra core engine e consumer esterni (es. web app).
+Definire il contratto stabilizzato tra il core engine dell'interprete Scheme (`src/lib/scheme`) ed i consumatori esterni (interfaccia web visualizzatrice, test automatizzati, strumenti CLI).
 
-== Parser API
+== 1. Parser API (`src/lib/scheme/ast/parser.ts`)
 
-=== parseProgrammaDaSorgente(sorgente: string): ProgrammaAST
+=== `parseProgrammaDaSorgente(sorgente: string): ProgrammaAST`
 
-Precondizioni:
+**Precondizioni:**
+- `sorgente`: stringa non nulla contenente codice Scheme.
 
-- sorgente non nullo
+**Postcondizioni:**
+- Ritorna un'istanza di `ProgrammaAST` contenente la sequenza ordinata di nodi AST top-level.
+- In caso di sintassi non valida lancia un `SyntaxError` con descrizione del token e della posizione.
 
-Postcondizioni:
+=== `ParserScheme` (Classe)
+- `constructor(tokens: Parola[])`
+- `parseProgramma(): ProgrammaAST`
 
-- ritorna ProgrammaAST con forme in ordine
-- in caso di sintassi non valida lancia errore descrittivo
+== 2. Stepper API (`src/lib/scheme/runtime/stepper.ts`)
 
-Errori principali:
+=== `StepperScheme` (Classe)
 
-- parentesi mancanti
-- token inattesi
-- clausole semantiche minime violate (es. corpo lambda vuoto)
+==== Costruttore e Factory Methods
+- `constructor(envOrId?: Ambiente<ValoreScheme> | string)`: Inizializza lo stepper con un'istanza di `Ambiente` o un ID di profilo predefinito (default `"standard"`).
+- `static daSorgente(sorgente: string, ambienteOverride?: Ambiente<ValoreScheme>): StepperScheme`: Istanzia lo stepper rilevando eventuali direttive `; ambiente: <id>` nel sorgente.
 
-== Stepper API
+==== Metodi di Valutazione
+- `passo(nodo: NodoAST, env?: Ambiente<ValoreScheme>): PassoStepping`: Esegue un singolo passo di riduzione e restituisce il `PassoStepping` corredato dell'istantanea dell'ambiente (`SnapshotAmbiente`).
+- `passiDaSorgente(sorgente: string, maxPassi: number = 200): PassoStepping[]`: Parsa il sorgente ed esegue riduzioni successive fino alla terminazione o al raggiungimento di `maxPassi`.
+- `passiStream(sorgente: string, maxPassi: number = 200): Generator<PassoStepping>`: Generatore pigro (*streaming generator*) che emette i passi uno alla volta durante l'elaborazione.
+- `getAmbiente(): Ambiente<ValoreScheme>`: Restituisce l'istanza corrente di `Ambiente`.
 
-=== passo(nodo: NodoAST, env?): PassoStepping
+==== Tipo `PassoStepping`
+[source,typescript]
+----
+export interface PassoStepping {
+  astPrecedente: NodoAST;
+  astSuccessivo: NodoAST;
+  regolaApplicata: string;
+  èTerminato: boolean;
+  ambiente: SnapshotAmbiente;
+}
+----
 
-Campi output:
+== 3. Ambiente API (`src/lib/scheme/runtime/ambiente*.ts`)
 
-- astPrecedente: stato prima della riduzione
-- astSuccessivo: stato dopo la riduzione
-- regolaApplicata: spiegazione sintetica
-- eTerminato: true se non ci sono ulteriori riduzioni
+=== `Ambiente<Valore>` (Classe)
+- `applica(simbolo: string): Valore`: Restituisce il valore associato al simbolo. Lancia eccezione `Error` se il simbolo non è nello scope locale né negli ambienti genitori.
+- `inserisci(simbolo: string, valore: Valore): void`: Inserisce o aggiorna il legame nel solo scope locale.
+- `isVuoto(): boolean`: Restituisce `true` se lo scope locale non ha legami.
+- `numElementi(): number`: Restituisce il numero di legami definiti nello scope locale.
+- `istantanea(serializzaValore: (valore: Valore) => string): SnapshotAmbiente`: Produce lo snapshot gerarchico dell'ambiente.
 
-=== passiDaSorgente(sorgente: string, maxPassi = 200): PassoStepping[]
+=== Registro e Factory (`src/lib/scheme/runtime/registroAmbienti.ts`)
+- `creaAmbiente(id: string = 'standard'): Ambiente<ValoreScheme>`: Istanzia un nuovo ambiente popolato con le primitive del profilo. Lancia `AmbienteNonTrovatoError` se l'ID non è registrato.
+- `getIdsAmbientiDisponibili(): readonly string[]`: Restituisce la lista degli ID di profilo disponibili (`["minimo-numeri-naturali", "per-divisione", "standard"]`).
 
-Comportamento:
+== 4. Formatter API (`src/lib/scheme/ast/formatter.ts`)
 
-- parse sorgente in ProgrammaAST
-- applica riduzioni iterative
-- termina quando eTerminato = true
-- lancia errore se supera maxPassi
+=== `FormatterScheme` (Classe)
+- `stampa(nodo: NodoAST): string`: Restituisce la rappresentazione simbolica Scheme canonica in stringa per qualsiasi nodo AST.
+- `formattaPassoStepping(passo: PassoStepping, indice: number): SnapshotPassoStepping`: Converte un singolo passo in un DTO ottimizzato per la UI web.
+- `formattaTimelineStepping(passi: PassoStepping[]): SnapshotPassoStepping[]`: Converte l'intera sequenza di passi in un'array di snapshot per la UI.
+- `formattaTimelineTestuale(passi: PassoStepping[]): string`: Genera un report testuale per log e CLI.
 
-== Formatter API
+== 5. Stabilità dei DTO per Integrazione Web (`SnapshotPassoStepping`)
 
-=== stampa(nodo: NodoAST): string
+I seguenti campi dell'interfaccia DTO `SnapshotPassoStepping` sono considerati **stabili e retrocompatibili**:
 
-Ritorna rappresentazione canonica simbolica del nodo.
+[source,typescript]
+----
+export interface SnapshotPassoStepping {
+  indice: number;
+  regola: string;
+  precedente: string;
+  successivo: string;
+  terminato: boolean;
+  haRidotto: boolean;
+  focusProgramma?: {
+    indiceForma: number;
+    totaleForme: number;
+  };
+  ambiente: SnapshotAmbiente;
+}
+----
 
-=== formattaPassoStepping(passo, indice): SnapshotPassoStepping
-
-Ritorna DTO con:
-
-- indice
-- regola
-- precedente
-- successivo
-- terminato
-- haRidotto
-- focusProgramma (opzionale)
-
-=== formattaTimelineStepping(passi): SnapshotPassoStepping[]
-
-Converte una sequenza di passi in timeline pronta per UI.
-
-=== formattaTimelineTestuale(passi): string
-
-Converte timeline in log lineare per debug.
-
-== Stabilita contrattuale
-
-I seguenti campi sono considerati stabili per integrazione frontend:
-
-- SnapshotPassoStepping.indice
-- SnapshotPassoStepping.regola
-- SnapshotPassoStepping.precedente
-- SnapshotPassoStepping.successivo
-- SnapshotPassoStepping.terminato
-- SnapshotPassoStepping.haRidotto

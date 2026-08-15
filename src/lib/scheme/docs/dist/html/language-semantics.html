@@ -2025,141 +2025,464 @@
 			}
 		</style>
 	</head>
-	<body class="article">
+	<body class="article toc2 toc-left">
 		<div id="header">
 			<h1>Language Semantics</h1>
-			<div id="toc" class="toc">
+			<div id="toc" class="toc2">
 				<div id="toctitle">Table of Contents</div>
 				<ul class="sectlevel1">
-					<li><a href="#_scopo">Scopo</a></li>
-					<li><a href="#_forme_valutabili">Forme valutabili</a></li>
+					<li><a href="#_scopo">1. Scopo</a></li>
+					<li><a href="#_forme_valutabili_e_tipi_ast">2. Forme Valutabili e Tipi AST</a></li>
 					<li>
-						<a href="#_regole_di_riduzione_alto_livello">Regole di riduzione (alto livello)</a>
+						<a href="#_regole_di_riduzione_dettagliate">3. Regole di Riduzione Dettagliate</a>
+						<ul class="sectlevel2">
+							<li>
+								<a href="#_1_programma_programmaast"
+									>3.1. 1. Programma (<code>ProgrammaAST</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_2_definizioni_defineast">3.2. 2. Definizioni (<code>DefineAST</code>)</a>
+							</li>
+							<li>
+								<a href="#_3_condizionale_if_ifast"
+									>3.3. 3. Condizionale <code>If</code> (<code>IfAST</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_4_congiunzione_and_andast"
+									>3.4. 4. Congiunzione <code>And</code> (<code>AndAST</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_5_disgiunzione_or_orast"
+									>3.5. 5. Disgiunzione <code>Or</code> (<code>OrAST</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_6_condizionale_multi_ramo_cond_condast"
+									>3.6. 6. Condizionale Multi-ramo <code>Cond</code> (<code>CondAST</code>)</a
+								>
+							</li>
+							<li>
+								<a href="#_7_applicazione_di_funzione_applicazioneast"
+									>3.7. 7. Applicazione di Funzione (<code>ApplicazioneAST</code>)</a
+								>
+							</li>
+						</ul>
 					</li>
-					<li><a href="#_tracciabilita_grammatica">Tracciabilita grammatica</a></li>
+					<li><a href="#_tracciabilità_grammatica">4. Tracciabilità Grammatica</a></li>
 				</ul>
 			</div>
 		</div>
 		<div id="content">
 			<div class="sect1">
-				<h2 id="_scopo">Scopo</h2>
-				<div class="sectionbody">
-					<div class="paragraph">
-						<p>Definire la semantica operativa del sottoinsieme Scheme supportato.</p>
-					</div>
-				</div>
-			</div>
-			<div class="sect1">
-				<h2 id="_forme_valutabili">Forme valutabili</h2>
-				<div class="sectionbody">
-					<div class="ulist">
-						<ul>
-							<li>
-								<p>Atomo: auto-valutante se numero/boolean/stringa, altrimenti lookup simbolo.</p>
-							</li>
-							<li>
-								<p>Define: valuta il valore, inserisce binding, restituisce valore definito.</p>
-							</li>
-							<li>
-								<p>If: valuta condizione, seleziona then/else.</p>
-							</li>
-							<li>
-								<p>Cond: valuta clausole in ordine, prima vera vince.</p>
-							</li>
-							<li>
-								<p>Applicazione: valuta operatore/argomenti e applica primitiva.</p>
-							</li>
-							<li>
-								<p>Programma: valuta le forme top-level in ordine.</p>
-							</li>
-						</ul>
-					</div>
-				</div>
-			</div>
-			<div class="sect1">
-				<h2 id="_regole_di_riduzione_alto_livello">Regole di riduzione (alto livello)</h2>
-				<div class="sectionbody">
-					<div class="olist arabic">
-						<ol class="arabic">
-							<li>
-								<p>Programma</p>
-								<div class="ulist">
-									<ul>
-										<li>
-											<p>riduci la prima forma non finale</p>
-										</li>
-										<li>
-											<p>se tutte finali: programma terminato</p>
-										</li>
-									</ul>
-								</div>
-							</li>
-							<li>
-								<p>Define</p>
-								<div class="ulist">
-									<ul>
-										<li>
-											<p>se valore non ridotto: riduci valore</p>
-										</li>
-										<li>
-											<p>altrimenti: inserisci binding in ambiente</p>
-										</li>
-									</ul>
-								</div>
-							</li>
-							<li>
-								<p>Applicazione</p>
-								<div class="ulist">
-									<ul>
-										<li>
-											<p>riduci operatore se necessario</p>
-										</li>
-										<li>
-											<p>risolvi argomenti simbolici</p>
-										</li>
-										<li>
-											<p>riduci argomenti left-to-right</p>
-										</li>
-										<li>
-											<p>applica funzione se operatore e argomenti sono pronti</p>
-										</li>
-									</ul>
-								</div>
-							</li>
-						</ol>
-					</div>
-				</div>
-			</div>
-			<div class="sect1">
-				<h2 id="_tracciabilita_grammatica">Tracciabilita grammatica</h2>
+				<h2 id="_scopo">1. Scopo</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
 						<p>
-							La grammatica canonica e in [ast/grammar.md](../ast/grammar.md). Ogni estensione
-							grammaticale deve riflettersi in:
+							Definire formalmente la semantica operativa a piccoli passi (<strong
+								>small-step operational semantics</strong
+							>) del sottoinsieme Scheme supportato.
 						</p>
 					</div>
-					<div class="ulist">
-						<ul>
-							<li>
-								<p>nodo AST esplicito</p>
-							</li>
-							<li>
-								<p>regola parser dedicata</p>
-							</li>
-							<li>
-								<p>formato canonico formatter</p>
-							</li>
-							<li>
-								<p>regola stepper o TODO semantico</p>
-							</li>
-						</ul>
+				</div>
+			</div>
+			<div class="sect1">
+				<h2 id="_forme_valutabili_e_tipi_ast">2. Forme Valutabili e Tipi AST</h2>
+				<div class="sectionbody">
+					<table class="tableblock frame-all grid-all stretch">
+						<colgroup>
+							<col style="width: 16.6666%" />
+							<col style="width: 33.3333%" />
+							<col style="width: 50.0001%" />
+						</colgroup>
+						<thead>
+							<tr>
+								<th class="tableblock halign-left valign-top">Forma</th>
+								<th class="tableblock halign-left valign-top">Nodo AST</th>
+								<th class="tableblock halign-left valign-top">Semantica Operativa</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Atomo</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>AtomoAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										I valori letterali (numeri, booleani, stringhe) sono auto-valutanti. I simboli
+										vengono risolti cercandoli nell&#8217;ambiente di esecuzione
+										(<code>env.applica</code>).
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Define</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>DefineAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Se l&#8217;espressione associata non è contratta ad atomo/chiusura, ne esegue la
+										riduzione a piccoli passi; quando ridotta, lega il simbolo all&#8217;ambiente
+										corrente e restituisce il valore.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>If / Se</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>IfAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Valuta l&#8217;espressione di condizione. Se è <code>#t</code> (o truthy non
+										<code>#f</code>), seleziona il ramo <strong>then</strong>; se è <code>#f</code>,
+										seleziona il ramo <strong>else</strong> (default <code>#f</code> se omesso).
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>And / E</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>AndAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Valuta le espressioni da sinistra a destra con cortocircuito: se
+										un&#8217;espressione si riduce a <code>#f</code>, l&#8217;intera forma si riduce
+										immediatamente a <code>#f</code>.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Or / O</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>OrAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Valuta le espressioni da sinistra a destra con cortocircuito: se
+										un&#8217;espressione si riduce a un valore truthy, l&#8217;intera forma si
+										riduce immediatamente a quel valore.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Cond</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>CondAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Valuta sequenzialmente le clausole
+										<code>(condizione conseguente&#8230;&#8203;)</code>. Se la condizione è vera (o
+										<code>else</code>/<code>altrimenti</code>), riduce al conseguente. Se la
+										condizione è <code>#f</code>, la clausola viene scartata.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Lambda</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>LambdaAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Crea ed incapsula una chiusura lessicale <code>Chiusura</code> contenente i nomi
+										dei parametri, i nodi del corpo e il riferimento all&#8217;ambiente in cui è
+										definita.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Citazione</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>CitazioneAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Preserva il dato letterale (<code>Atomo</code>, <code>Lista</code> o
+										<code>Coppia</code>) senza eseguire alcuna valutazione interna dei simboli
+										contenuti.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Applicazione</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>ApplicazioneAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Valuta operatore ed argomenti da sinistra a destra. Se l&#8217;operatore è una
+										funzione primitiva TypeScript, esegue l&#8217;applicazione diretta; se è una
+										<code>Chiusura</code>, sostituisce i parametri formali con i valori degli
+										argomenti ed espande il corpo.
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><strong>Programma</strong></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock"><code>ProgrammaAST</code></p>
+								</td>
+								<td class="tableblock halign-left valign-top">
+									<p class="tableblock">
+										Riduce in sequenza le forme top-level fino al loro completamento.
+									</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="sect1">
+				<h2 id="_regole_di_riduzione_dettagliate">3. Regole di Riduzione Dettagliate</h2>
+				<div class="sectionbody">
+					<div class="sect2">
+						<h3 id="_1_programma_programmaast">3.1. 1. Programma (<code>ProgrammaAST</code>)</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>Scansiona la lista delle forme da sinistra a destra.</p>
+								</li>
+								<li>
+									<p>Applica un passo di riduzione sulla prima forma non ancora terminata.</p>
+								</li>
+								<li>
+									<p>
+										Se tutte le forme sono state completamente ridotte, il programma è considerato
+										<code>èTerminato = true</code>.
+									</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_2_definizioni_defineast">3.2. 2. Definizioni (<code>DefineAST</code>)</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>
+										Se il valore da associare è un&#8217;espressione non ancora ridotta (e diversa
+										da una <code>LambdaAST</code>), applica un passo di riduzione
+										sull&#8217;espressione.
+									</p>
+								</li>
+								<li>
+									<p>
+										Se il valore è una <code>LambdaAST</code>, crea la chiusura lessicale, la
+										memorizza nell&#8217;ambiente per il simbolo dato e produce un atomo
+										<code>#&lt;chiusura:nome&gt;</code>.
+									</p>
+								</li>
+								<li>
+									<p>
+										Se il valore è un atomo ridotto o una costante, inserisce il legame
+										<code>nome &#8594; valore</code> nello scope locale e produce un nodo
+										<code>AtomoAST(valore)</code>.
+									</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_3_condizionale_if_ifast">
+							3.3. 3. Condizionale <code>If</code> (<code>IfAST</code>)
+						</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>Se la condizione è un <code>AtomoAST(boolean)</code>:</p>
+									<div class="ulist">
+										<ul>
+											<li>
+												<p>
+													Se <code>true</code>, l&#8217;AST si riduce al ramo <strong>then</strong>.
+												</p>
+											</li>
+											<li>
+												<p>
+													Se <code>false</code>, l&#8217;AST si riduce al ramo
+													<strong>else</strong>.
+												</p>
+											</li>
+										</ul>
+									</div>
+								</li>
+								<li>
+									<p>
+										Se la condizione non è ancora un atomo booleano, applica un passo di riduzione
+										alla condizione.
+									</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_4_congiunzione_and_andast">
+							3.4. 4. Congiunzione <code>And</code> (<code>AndAST</code>)
+						</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>Se la lista delle espressioni è vuota, si riduce a <code>#t</code>.</p>
+								</li>
+								<li>
+									<p>
+										Se la prima espressione si riduce a <code>#f</code>, si applica il cortocircuito
+										riducendo l&#8217;intera forma a <code>AtomoAST(false)</code>.
+									</p>
+								</li>
+								<li>
+									<p>
+										Se la prima espressione è un atomo truthy e ci sono altre espressioni, la prima
+										espressione viene scartata avanzando a <code>AndAST(rimanenti)</code>.
+									</p>
+								</li>
+								<li>
+									<p>Se la prima espressione non è ridotta, applica un passo su di essa.</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_5_disgiunzione_or_orast">
+							3.5. 5. Disgiunzione <code>Or</code> (<code>OrAST</code>)
+						</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>Se la lista delle espressioni è vuota, si riduce a <code>#f</code>.</p>
+								</li>
+								<li>
+									<p>
+										Se la prima espressione si riduce a un valore truthy (non <code>#f</code>), si
+										applica il cortocircuito riducendo l&#8217;intera forma a quel valore.
+									</p>
+								</li>
+								<li>
+									<p>
+										Se la prima espressione è <code>#f</code> e ci sono altre espressioni, scarta
+										<code>#f</code> avanzando a <code>OrAST(rimanenti)</code>.
+									</p>
+								</li>
+								<li>
+									<p>Se la prima espressione non è ridotta, applica un passo su di essa.</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_6_condizionale_multi_ramo_cond_condast">
+							3.6. 6. Condizionale Multi-ramo <code>Cond</code> (<code>CondAST</code>)
+						</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>Se non vi sono clausole, si riduce a <code>#f</code>.</p>
+								</li>
+								<li>
+									<p>
+										Se la condizione della prima clausola è <code>else</code>,
+										<code>altrimenti</code> o <code>#t</code>, sostituisce l&#8217;intera forma con
+										il conseguente della prima clausola.
+									</p>
+								</li>
+								<li>
+									<p>
+										Se la condizione è <code>#f</code>, scarta la prima clausola e si riduce a
+										<code>CondAST(clausoleRimanenti)</code>.
+									</p>
+								</li>
+								<li>
+									<p>
+										Altrimenti applica un passo di riduzione sulla condizione della prima clausola.
+									</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_7_applicazione_di_funzione_applicazioneast">
+							3.7. 7. Applicazione di Funzione (<code>ApplicazioneAST</code>)
+						</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>
+										Se l&#8217;operatore non è un atomo o una lambda, applica un passo di riduzione
+										sull&#8217;operatore.
+									</p>
+								</li>
+								<li>
+									<p>Risolve eventuali argomenti simbolici cercandoli nell&#8217;ambiente.</p>
+								</li>
+								<li>
+									<p>Riduce gli argomenti che non sono ancora in forma atomica/valore.</p>
+								</li>
+								<li>
+									<p>Se operatore ed argomenti sono pronti:</p>
+									<div class="ulist">
+										<ul>
+											<li>
+												<p>
+													Se l&#8217;operatore è una <code>FunzionePrimitiva</code>, viene eseguita
+													la funzione nativa TS e l&#8217;AST si riduce al risultato.
+												</p>
+											</li>
+											<li>
+												<p>
+													Se l&#8217;operatore è una <code>Chiusura</code>, viene istanziato il
+													corpo sostituendo i parametri formali con gli argomenti attuali (Alpha
+													conversion / Substitution Model).
+												</p>
+											</li>
+										</ul>
+									</div>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="sect1">
+				<h2 id="_tracciabilità_grammatica">4. Tracciabilità Grammatica</h2>
+				<div class="sectionbody">
+					<div class="paragraph">
+						<p>
+							La grammatica formale EBNF e la matrice di corrispondenza sono definite in
+							[<code>src/lib/scheme/ast/grammar.md</code>](../ast/grammar.md).
+						</p>
 					</div>
 				</div>
 			</div>
 		</div>
 		<div id="footer">
-			<div id="footer-text">Last updated 2026-08-04 08:48:20 +0200</div>
+			<div id="footer-text">Last updated 2026-08-15 15:36:08 +0200</div>
 		</div>
 	</body>
 </html>

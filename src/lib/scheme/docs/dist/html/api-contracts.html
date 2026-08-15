@@ -2025,115 +2025,131 @@
 			}
 		</style>
 	</head>
-	<body class="article">
+	<body class="article toc2 toc-left">
 		<div id="header">
 			<h1>API Contracts</h1>
-			<div id="toc" class="toc">
+			<div id="toc" class="toc2">
 				<div id="toctitle">Table of Contents</div>
 				<ul class="sectlevel1">
-					<li><a href="#_scopo">Scopo</a></li>
+					<li><a href="#_scopo">1. Scopo</a></li>
 					<li>
-						<a href="#_parser_api">Parser API</a>
+						<a href="#_1_parser_api_srclibschemeastparser_ts"
+							>2. 1. Parser API (<code>src/lib/scheme/ast/parser.ts</code>)</a
+						>
 						<ul class="sectlevel2">
 							<li>
 								<a href="#_parseprogrammadasorgentesorgente_string_programmaast"
-									>parseProgrammaDaSorgente(sorgente: string): ProgrammaAST</a
+									>2.1. <code>parseProgrammaDaSorgente(sorgente: string): ProgrammaAST</code></a
+								>
+							</li>
+							<li>
+								<a href="#_parserscheme_classe">2.2. <code>ParserScheme</code> (Classe)</a>
+							</li>
+						</ul>
+					</li>
+					<li>
+						<a href="#_2_stepper_api_srclibschemeruntimestepper_ts"
+							>3. 2. Stepper API (<code>src/lib/scheme/runtime/stepper.ts</code>)</a
+						>
+						<ul class="sectlevel2">
+							<li>
+								<a href="#_stepperscheme_classe">3.1. <code>StepperScheme</code> (Classe)</a>
+								<ul class="sectlevel3">
+									<li>
+										<a href="#_costruttore_e_factory_methods"
+											>3.1.1. Costruttore e Factory Methods</a
+										>
+									</li>
+									<li><a href="#_metodi_di_valutazione">3.1.2. Metodi di Valutazione</a></li>
+									<li>
+										<a href="#_tipo_passostepping">3.1.3. Tipo <code>PassoStepping</code></a>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+					<li>
+						<a href="#_3_ambiente_api_srclibschemeruntimeambiente_ts"
+							>4. 3. Ambiente API (<code>src/lib/scheme/runtime/ambiente*.ts</code>)</a
+						>
+						<ul class="sectlevel2">
+							<li>
+								<a href="#_ambientevalore_classe"
+									>4.1. <code>Ambiente&lt;Valore&gt;</code> (Classe)</a
+								>
+							</li>
+							<li>
+								<a href="#_registro_e_factory_srclibschemeruntimeregistroambienti_ts"
+									>4.2. Registro e Factory
+									(<code>src/lib/scheme/runtime/registroAmbienti.ts</code>)</a
 								>
 							</li>
 						</ul>
 					</li>
 					<li>
-						<a href="#_stepper_api">Stepper API</a>
+						<a href="#_4_formatter_api_srclibschemeastformatter_ts"
+							>5. 4. Formatter API (<code>src/lib/scheme/ast/formatter.ts</code>)</a
+						>
 						<ul class="sectlevel2">
 							<li>
-								<a href="#_passonodo_nodoast_env_passostepping"
-									>passo(nodo: NodoAST, env?): PassoStepping</a
-								>
-							</li>
-							<li>
-								<a href="#_passidasorgentesorgente_string_maxpassi_200_passostepping"
-									>passiDaSorgente(sorgente: string, maxPassi = 200): PassoStepping[]</a
-								>
+								<a href="#_formatterscheme_classe">5.1. <code>FormatterScheme</code> (Classe)</a>
 							</li>
 						</ul>
 					</li>
 					<li>
-						<a href="#_formatter_api">Formatter API</a>
-						<ul class="sectlevel2">
-							<li><a href="#_stampanodo_nodoast_string">stampa(nodo: NodoAST): string</a></li>
-							<li>
-								<a href="#_formattapassosteppingpasso_indice_snapshotpassostepping"
-									>formattaPassoStepping(passo, indice): SnapshotPassoStepping</a
-								>
-							</li>
-							<li>
-								<a href="#_formattatimelinesteppingpassi_snapshotpassostepping"
-									>formattaTimelineStepping(passi): SnapshotPassoStepping[]</a
-								>
-							</li>
-							<li>
-								<a href="#_formattatimelinetestualepassi_string"
-									>formattaTimelineTestuale(passi): string</a
-								>
-							</li>
-						</ul>
+						<a href="#_5_stabilità_dei_dto_per_integrazione_web_snapshotpassostepping"
+							>6. 5. Stabilità dei DTO per Integrazione Web (<code>SnapshotPassoStepping</code>)</a
+						>
 					</li>
-					<li><a href="#_stabilita_contrattuale">Stabilita contrattuale</a></li>
 				</ul>
 			</div>
 		</div>
 		<div id="content">
 			<div class="sect1">
-				<h2 id="_scopo">Scopo</h2>
+				<h2 id="_scopo">1. Scopo</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
-						<p>Definire il contratto stabile tra core engine e consumer esterni (es. web app).</p>
+						<p>
+							Definire il contratto stabilizzato tra il core engine dell&#8217;interprete Scheme
+							(<code>src/lib/scheme</code>) ed i consumatori esterni (interfaccia web
+							visualizzatrice, test automatizzati, strumenti CLI).
+						</p>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_parser_api">Parser API</h2>
+				<h2 id="_1_parser_api_srclibschemeastparser_ts">
+					2. 1. Parser API (<code>src/lib/scheme/ast/parser.ts</code>)
+				</h2>
 				<div class="sectionbody">
 					<div class="sect2">
 						<h3 id="_parseprogrammadasorgentesorgente_string_programmaast">
-							parseProgrammaDaSorgente(sorgente: string): ProgrammaAST
+							2.1. <code>parseProgrammaDaSorgente(sorgente: string): ProgrammaAST</code>
 						</h3>
 						<div class="paragraph">
-							<p>Precondizioni:</p>
-						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>sorgente non nullo</p>
-								</li>
-							</ul>
+							<p>
+								<strong>Precondizioni:</strong> - <code>sorgente</code>: stringa non nulla
+								contenente codice Scheme.
+							</p>
 						</div>
 						<div class="paragraph">
-							<p>Postcondizioni:</p>
+							<p>
+								<strong>Postcondizioni:</strong> - Ritorna un&#8217;istanza di
+								<code>ProgrammaAST</code> contenente la sequenza ordinata di nodi AST top-level. -
+								In caso di sintassi non valida lancia un <code>SyntaxError</code> con descrizione
+								del token e della posizione.
+							</p>
 						</div>
+					</div>
+					<div class="sect2">
+						<h3 id="_parserscheme_classe">2.2. <code>ParserScheme</code> (Classe)</h3>
 						<div class="ulist">
 							<ul>
 								<li>
-									<p>ritorna ProgrammaAST con forme in ordine</p>
+									<p><code>constructor(tokens: Parola[])</code></p>
 								</li>
 								<li>
-									<p>in caso di sintassi non valida lancia errore descrittivo</p>
-								</li>
-							</ul>
-						</div>
-						<div class="paragraph">
-							<p>Errori principali:</p>
-						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>parentesi mancanti</p>
-								</li>
-								<li>
-									<p>token inattesi</p>
-								</li>
-								<li>
-									<p>clausole semantiche minime violate (es. corpo lambda vuoto)</p>
+									<p><code>parseProgramma(): ProgrammaAST</code></p>
 								</li>
 							</ul>
 						</div>
@@ -2141,151 +2157,244 @@
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_stepper_api">Stepper API</h2>
+				<h2 id="_2_stepper_api_srclibschemeruntimestepper_ts">
+					3. 2. Stepper API (<code>src/lib/scheme/runtime/stepper.ts</code>)
+				</h2>
 				<div class="sectionbody">
 					<div class="sect2">
-						<h3 id="_passonodo_nodoast_env_passostepping">
-							passo(nodo: NodoAST, env?): PassoStepping
-						</h3>
-						<div class="paragraph">
-							<p>Campi output:</p>
+						<h3 id="_stepperscheme_classe">3.1. <code>StepperScheme</code> (Classe)</h3>
+						<div class="sect3">
+							<h4 id="_costruttore_e_factory_methods">3.1.1. Costruttore e Factory Methods</h4>
+							<div class="ulist">
+								<ul>
+									<li>
+										<p>
+											<code>constructor(envOrId?: Ambiente&lt;ValoreScheme&gt; | string)</code>:
+											Inizializza lo stepper con un&#8217;istanza di <code>Ambiente</code> o un ID
+											di profilo predefinito (default <code>"standard"</code>).
+										</p>
+									</li>
+									<li>
+										<p>
+											<code
+												>static daSorgente(sorgente: string, ambienteOverride?:
+												Ambiente&lt;ValoreScheme&gt;): StepperScheme</code
+											>: Istanzia lo stepper rilevando eventuali direttive
+											<code>; ambiente: &lt;id&gt;</code> nel sorgente.
+										</p>
+									</li>
+								</ul>
+							</div>
 						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>astPrecedente: stato prima della riduzione</p>
-								</li>
-								<li>
-									<p>astSuccessivo: stato dopo la riduzione</p>
-								</li>
-								<li>
-									<p>regolaApplicata: spiegazione sintetica</p>
-								</li>
-								<li>
-									<p>eTerminato: true se non ci sono ulteriori riduzioni</p>
-								</li>
-							</ul>
+						<div class="sect3">
+							<h4 id="_metodi_di_valutazione">3.1.2. Metodi di Valutazione</h4>
+							<div class="ulist">
+								<ul>
+									<li>
+										<p>
+											<code
+												>passo(nodo: NodoAST, env?: Ambiente&lt;ValoreScheme&gt;):
+												PassoStepping</code
+											>: Esegue un singolo passo di riduzione e restituisce il
+											<code>PassoStepping</code> corredato dell&#8217;istantanea dell&#8217;ambiente
+											(<code>SnapshotAmbiente</code>).
+										</p>
+									</li>
+									<li>
+										<p>
+											<code
+												>passiDaSorgente(sorgente: string, maxPassi: number = 200):
+												PassoStepping[]</code
+											>: Parsa il sorgente ed esegue riduzioni successive fino alla terminazione o
+											al raggiungimento di <code>maxPassi</code>.
+										</p>
+									</li>
+									<li>
+										<p>
+											<code
+												>passiStream(sorgente: string, maxPassi: number = 200):
+												Generator&lt;PassoStepping&gt;</code
+											>: Generatore pigro (<strong>streaming generator</strong>) che emette i passi
+											uno alla volta durante l&#8217;elaborazione.
+										</p>
+									</li>
+									<li>
+										<p>
+											<code>getAmbiente(): Ambiente&lt;ValoreScheme&gt;</code>: Restituisce
+											l&#8217;istanza corrente di <code>Ambiente</code>.
+										</p>
+									</li>
+								</ul>
+							</div>
 						</div>
-					</div>
-					<div class="sect2">
-						<h3 id="_passidasorgentesorgente_string_maxpassi_200_passostepping">
-							passiDaSorgente(sorgente: string, maxPassi = 200): PassoStepping[]
-						</h3>
-						<div class="paragraph">
-							<p>Comportamento:</p>
-						</div>
-						<div class="ulist">
-							<ul>
-								<li>
-									<p>parse sorgente in ProgrammaAST</p>
-								</li>
-								<li>
-									<p>applica riduzioni iterative</p>
-								</li>
-								<li>
-									<p>termina quando eTerminato = true</p>
-								</li>
-								<li>
-									<p>lancia errore se supera maxPassi</p>
-								</li>
-							</ul>
+						<div class="sect3">
+							<h4 id="_tipo_passostepping">3.1.3. Tipo <code>PassoStepping</code></h4>
+							<div class="listingblock">
+								<div class="content">
+									<pre
+										class="highlight"
+									><code class="language-typescript" data-lang="typescript">export interface PassoStepping {
+  astPrecedente: NodoAST;
+  astSuccessivo: NodoAST;
+  regolaApplicata: string;
+  èTerminato: boolean;
+  ambiente: SnapshotAmbiente;
+}</code></pre>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_formatter_api">Formatter API</h2>
+				<h2 id="_3_ambiente_api_srclibschemeruntimeambiente_ts">
+					4. 3. Ambiente API (<code>src/lib/scheme/runtime/ambiente*.ts</code>)
+				</h2>
 				<div class="sectionbody">
 					<div class="sect2">
-						<h3 id="_stampanodo_nodoast_string">stampa(nodo: NodoAST): string</h3>
-						<div class="paragraph">
-							<p>Ritorna rappresentazione canonica simbolica del nodo.</p>
-						</div>
-					</div>
-					<div class="sect2">
-						<h3 id="_formattapassosteppingpasso_indice_snapshotpassostepping">
-							formattaPassoStepping(passo, indice): SnapshotPassoStepping
-						</h3>
-						<div class="paragraph">
-							<p>Ritorna DTO con:</p>
-						</div>
+						<h3 id="_ambientevalore_classe">4.1. <code>Ambiente&lt;Valore&gt;</code> (Classe)</h3>
 						<div class="ulist">
 							<ul>
 								<li>
-									<p>indice</p>
+									<p>
+										<code>applica(simbolo: string): Valore</code>: Restituisce il valore associato
+										al simbolo. Lancia eccezione <code>Error</code> se il simbolo non è nello scope
+										locale né negli ambienti genitori.
+									</p>
 								</li>
 								<li>
-									<p>regola</p>
+									<p>
+										<code>inserisci(simbolo: string, valore: Valore): void</code>: Inserisce o
+										aggiorna il legame nel solo scope locale.
+									</p>
 								</li>
 								<li>
-									<p>precedente</p>
+									<p>
+										<code>isVuoto(): boolean</code>: Restituisce <code>true</code> se lo scope
+										locale non ha legami.
+									</p>
 								</li>
 								<li>
-									<p>successivo</p>
+									<p>
+										<code>numElementi(): number</code>: Restituisce il numero di legami definiti
+										nello scope locale.
+									</p>
 								</li>
 								<li>
-									<p>terminato</p>
-								</li>
-								<li>
-									<p>haRidotto</p>
-								</li>
-								<li>
-									<p>focusProgramma (opzionale)</p>
+									<p>
+										<code
+											>istantanea(serializzaValore: (valore: Valore) &#8658; string):
+											SnapshotAmbiente</code
+										>: Produce lo snapshot gerarchico dell&#8217;ambiente.
+									</p>
 								</li>
 							</ul>
 						</div>
 					</div>
 					<div class="sect2">
-						<h3 id="_formattatimelinesteppingpassi_snapshotpassostepping">
-							formattaTimelineStepping(passi): SnapshotPassoStepping[]
+						<h3 id="_registro_e_factory_srclibschemeruntimeregistroambienti_ts">
+							4.2. Registro e Factory (<code>src/lib/scheme/runtime/registroAmbienti.ts</code>)
 						</h3>
-						<div class="paragraph">
-							<p>Converte una sequenza di passi in timeline pronta per UI.</p>
-						</div>
-					</div>
-					<div class="sect2">
-						<h3 id="_formattatimelinetestualepassi_string">
-							formattaTimelineTestuale(passi): string
-						</h3>
-						<div class="paragraph">
-							<p>Converte timeline in log lineare per debug.</p>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>
+										<code>creaAmbiente(id: string = 'standard'): Ambiente&lt;ValoreScheme&gt;</code
+										>: Istanzia un nuovo ambiente popolato con le primitive del profilo. Lancia
+										<code>AmbienteNonTrovatoError</code> se l&#8217;ID non è registrato.
+									</p>
+								</li>
+								<li>
+									<p>
+										<code>getIdsAmbientiDisponibili(): readonly string[]</code>: Restituisce la
+										lista degli ID di profilo disponibili (<code
+											>["minimo-numeri-naturali", "per-divisione", "standard"]</code
+										>).
+									</p>
+								</li>
+							</ul>
 						</div>
 					</div>
 				</div>
 			</div>
 			<div class="sect1">
-				<h2 id="_stabilita_contrattuale">Stabilita contrattuale</h2>
+				<h2 id="_4_formatter_api_srclibschemeastformatter_ts">
+					5. 4. Formatter API (<code>src/lib/scheme/ast/formatter.ts</code>)
+				</h2>
+				<div class="sectionbody">
+					<div class="sect2">
+						<h3 id="_formatterscheme_classe">5.1. <code>FormatterScheme</code> (Classe)</h3>
+						<div class="ulist">
+							<ul>
+								<li>
+									<p>
+										<code>stampa(nodo: NodoAST): string</code>: Restituisce la rappresentazione
+										simbolica Scheme canonica in stringa per qualsiasi nodo AST.
+									</p>
+								</li>
+								<li>
+									<p>
+										<code
+											>formattaPassoStepping(passo: PassoStepping, indice: number):
+											SnapshotPassoStepping</code
+										>: Converte un singolo passo in un DTO ottimizzato per la UI web.
+									</p>
+								</li>
+								<li>
+									<p>
+										<code
+											>formattaTimelineStepping(passi: PassoStepping[]):
+											SnapshotPassoStepping[]</code
+										>: Converte l&#8217;intera sequenza di passi in un&#8217;array di snapshot per
+										la UI.
+									</p>
+								</li>
+								<li>
+									<p>
+										<code>formattaTimelineTestuale(passi: PassoStepping[]): string</code>: Genera un
+										report testuale per log e CLI.
+									</p>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="sect1">
+				<h2 id="_5_stabilità_dei_dto_per_integrazione_web_snapshotpassostepping">
+					6. 5. Stabilità dei DTO per Integrazione Web (<code>SnapshotPassoStepping</code>)
+				</h2>
 				<div class="sectionbody">
 					<div class="paragraph">
-						<p>I seguenti campi sono considerati stabili per integrazione frontend:</p>
+						<p>
+							I seguenti campi dell&#8217;interfaccia DTO <code>SnapshotPassoStepping</code> sono
+							considerati <strong>stabili e retrocompatibili</strong>:
+						</p>
 					</div>
-					<div class="ulist">
-						<ul>
-							<li>
-								<p>SnapshotPassoStepping.indice</p>
-							</li>
-							<li>
-								<p>SnapshotPassoStepping.regola</p>
-							</li>
-							<li>
-								<p>SnapshotPassoStepping.precedente</p>
-							</li>
-							<li>
-								<p>SnapshotPassoStepping.successivo</p>
-							</li>
-							<li>
-								<p>SnapshotPassoStepping.terminato</p>
-							</li>
-							<li>
-								<p>SnapshotPassoStepping.haRidotto</p>
-							</li>
-						</ul>
+					<div class="listingblock">
+						<div class="content">
+							<pre
+								class="highlight"
+							><code class="language-typescript" data-lang="typescript">export interface SnapshotPassoStepping {
+  indice: number;
+  regola: string;
+  precedente: string;
+  successivo: string;
+  terminato: boolean;
+  haRidotto: boolean;
+  focusProgramma?: {
+    indiceForma: number;
+    totaleForme: number;
+  };
+  ambiente: SnapshotAmbiente;
+}</code></pre>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 		<div id="footer">
-			<div id="footer-text">Last updated 2026-08-04 08:51:14 +0200</div>
+			<div id="footer-text">Last updated 2026-08-15 15:36:15 +0200</div>
 		</div>
 	</body>
 </html>

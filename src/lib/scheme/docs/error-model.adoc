@@ -1,55 +1,95 @@
 = Error Model
-:toc:
+:toc: left
+:toclevels: 3
+:sectnums:
 
 == Scopo
 
-Uniformare errori parser/stepper in un modello coerente per logging e UI.
+Uniformare la classificazione, il formato ed il trattamento degli errori generati dall'interprete Scheme (`ParserScheme`, `StepperScheme`, `Ambiente`), facilitando il logging ed il rendering strutturato dei messaggi di errore nella UI web.
 
-== Categorie
+== Categorie di Errore
 
-=== SYNTAX_ERROR
+=== 1. `SYNTAX_ERROR` (Errori Sintattici)
 
-Origine: parser.
+**Origine:** `ParserScheme` (`src/lib/scheme/ast/parser.ts`)
 
-Esempi:
+Lanciati come istanze di `SyntaxError` quando il codice sorgente viola le regole grammaticali EBNF.
 
-- parentesi mancante
-- token inatteso
-- forma speciale incompleta
+**Formato del messaggio:**
+`SyntaxError: <messaggio>. Token corrente: <valore> (<tipo>).`
 
-=== SEMANTIC_ERROR
+**Esempi:**
+- Parentesi aperta o chiusa mancante (`"Attesa parentesi chiusa..."`).
+- Nome non simbolico in `define` (`"Il nome in define deve essere un simbolo."`).
+- Parametri `lambda` non validi (`"I parametri lambda devono essere simboli."`).
+- Corpo `lambda` vuoto (`"Il corpo lambda non puo essere vuoto."`).
+- Clausola `cond` senza conseguente (`"Ogni clausola cond deve avere almeno un conseguente."`).
 
-Origine: stepper/runtime.
+=== 2. `UNDEFINED_SYMBOL` (Simbolo Non Definito)
 
-Esempi:
+**Origine:** `Ambiente.applica` (`src/lib/scheme/runtime/ambiente.ts`)
 
-- simbolo non risolvibile
-- applicazione non valida
-- clausola cond non valida
+Lanciato come `Error` standard quando lo stepper tenta di valutare o applicare un identificatore non presente nell'ambiente locale o nei relativi genitori.
 
-=== EXECUTION_LIMIT
+**Formato del messaggio:**
+`Errore di Runtime: Simbolo '<simbolo>' non definito nello scope.`
 
-Origine: stepper.
+=== 3. `ARITY_MISMATCH` (Mismatch Numero Argomenti)
 
-Esempio:
+**Origine:** `StepperScheme.istanziaCorpoChiusura` / Primitive native (`src/lib/scheme/runtime/stepper.ts`)
 
-- superato limite maxPassi
+Lanciato quando il numero di argomenti forniti in un'applicazione non corrisponde al numero dei parametri formali dichiarati dalla chiusura o richiesti dalla funzione primitiva.
 
-== Payload standard suggerito
+**Formato del messaggio:**
+`Arity mismatch: attesi <N> argomenti, ricevuti <M>.`
+
+=== 4. `TYPE_ERROR` (Errore di Tipo Runtime)
+
+**Origine:** Primitive d'ambiente (`ambienteStandard.ts`, `ambientePerDivisione.ts`, ecc.)
+
+Lanciato quando l'argomento passato a una primitiva non soddisfa il tipo atteso (es. operazione aritmetica su stringhe o navigazione di liste su non-liste).
+
+**Esempi:**
+- `'<operatore>' richiede argomenti numerici.`
+- `'primo' richiede una lista non vuota.`
+- `La condizione di 'if/se' non si riduce a un booleano.`
+
+=== 5. `ENVIRONMENT_NOT_FOUND` (Profilo Ambiente Inesistente)
+
+**Origine:** `creaAmbiente` (`src/lib/scheme/runtime/registroAmbienti.ts`)
+
+Lanciato come istanza della classe personalizzata `AmbienteNonTrovatoError`.
+
+**Formato del messaggio:**
+`Ambiente con id "<idAmbiente>" non trovato tra i profili predefiniti.`
+
+=== 6. `EXECUTION_LIMIT` (Superamento Limite Passi)
+
+**Origine:** `StepperScheme.passiDaSorgente` / `passiStream` (`src/lib/scheme/runtime/stepper.ts`)
+
+Lanciato per prevenire cicli infiniti durante la riduzione di ricorsioni non terminanti.
+
+**Formato del messaggio:**
+`Limite massimo di <maxPassi> passi raggiunto.`
+
+== Mapping DTO suggerito per Frontend / Web UI
 
 [source,typescript]
 ----
-interface EngineError {
-  code: 'SYNTAX_ERROR' | 'SEMANTIC_ERROR' | 'EXECUTION_LIMIT' | 'INTERNAL_ERROR';
-  message: string;
-  details?: string;
-  stepIndex?: number;
+export type CodiceErroreScheme =
+  | 'SYNTAX_ERROR'
+  | 'UNDEFINED_SYMBOL'
+  | 'ARITY_MISMATCH'
+  | 'TYPE_ERROR'
+  | 'ENVIRONMENT_NOT_FOUND'
+  | 'EXECUTION_LIMIT'
+  | 'INTERNAL_ERROR';
+
+export interface ErroreInterpreteDTO {
+  codice: CodiceErroreScheme;
+  messaggio: string;
+  dettagli?: string;
+  passoCorrente?: number;
 }
 ----
 
-== Mapping pratico
-
-- Error parser -> SYNTAX_ERROR
-- Error da maxPassi -> EXECUTION_LIMIT
-- Error di lookup/applicazione runtime -> SEMANTIC_ERROR
-- Error non classificati -> INTERNAL_ERROR

@@ -11,7 +11,8 @@
 	let { direction = 'horizontal', first, second, initialSplit = 50 }: Props = $props();
 
 	// Stato reattivo espresso tramite Runes
-	let splitPercentage = $derived(initialSplit);
+	let customSplit = $state<number | null>(null);
+	let splitPercentage = $derived(customSplit !== null ? customSplit : initialSplit);
 	let isDragging = $state(false);
 	let containerRef = $state<HTMLElement | null>(null);
 
@@ -46,7 +47,7 @@
 		}
 
 		// Clamp tra 0 e 100
-		splitPercentage = Math.min(Math.max(newPercentage, 0), 100);
+		customSplit = Math.min(Math.max(newPercentage, 0), 100);
 	}
 </script>
 
